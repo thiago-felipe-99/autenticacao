@@ -31,11 +31,11 @@ type RolePartial struct {
 }
 
 type Role struct {
-	Name      string    `json:"name"                bson:"name"`
-	CreatedAt time.Time `json:"createdAt"           bson:"created_at"`
-	CreatedBy ID        `json:"createdBy"           bson:"created_by"`
-	DeletedAt time.Time `json:"deletedAt,omitempty" bson:"deleted_at"`
-	DeletedBy ID        `json:"deletedBy,omitempty" bson:"deleted_by"`
+	Name      string    `json:"name"                db:"name"`
+	CreatedAt time.Time `json:"createdAt"           db:"created_at"`
+	CreatedBy ID        `json:"createdBy"           db:"created_by"`
+	DeletedAt time.Time `json:"deletedAt,omitempty" db:"deleted_at"`
+	DeletedBy ID        `json:"deletedBy,omitempty" db:"deleted_by"`
 }
 
 type UserPartial struct {
@@ -55,17 +55,17 @@ type UserUpdate struct {
 }
 
 type User struct {
-	ID        ID        `json:"id"                  bson:"_id"`
-	Name      string    `json:"name"                bson:"name"`
-	Username  string    `json:"username"            bson:"username"`
-	Email     string    `json:"email"               bson:"email"`
-	Password  string    `json:"password,omitempty"  bson:"password"`
-	Roles     []string  `json:"roles,omitempty"     bson:"roles"`
-	IsActive  bool      `json:"isActive"            bson:"is_active"`
-	CreatedAt time.Time `json:"createdAt"           bson:"created_at"`
-	CreatedBy ID        `json:"createdBy"           bson:"created_by"`
-	DeletedAt time.Time `json:"deletedAt,omitempty" bson:"deleted_at"`
-	DeletedBy ID        `json:"deletedBy,omitempty" bson:"deleted_by"`
+	ID        ID        `json:"id"                  db:"_id"`
+	Name      string    `json:"name"                db:"name"`
+	Username  string    `json:"username"            db:"username"`
+	Email     string    `json:"email"               db:"email"`
+	Password  string    `json:"password,omitempty"  db:"password"`
+	Roles     []string  `json:"roles,omitempty"     db:"roles"`
+	IsActive  bool      `json:"isActive"            db:"is_active"`
+	CreatedAt time.Time `json:"createdAt"           db:"created_at"`
+	CreatedBy ID        `json:"createdBy"           db:"created_by"`
+	DeletedAt time.Time `json:"deletedAt,omitempty" db:"deleted_at"`
+	DeletedBy ID        `json:"deletedBy,omitempty" db:"deleted_by"`
 }
 
 type UserSessionPartial struct {
@@ -75,9 +75,9 @@ type UserSessionPartial struct {
 }
 
 type UserSession struct {
-	ID        ID        `json:"id"                  bson:"_id"`
-	UserID    ID        `json:"userId"              bson:"user_id"`
-	CreateaAt time.Time `json:"createdAt"           bson:"created_at"`
-	Expires   time.Time `json:"expires"             bson:"expires"`
-	DeletedAt time.Time `json:"deletedAt,omitempty" bson:"deleted_at"`
+	ID        ID        `json:"id"                  db:"_id"`
+	UserID    ID        `json:"userId"              db:"user_id"`
+	CreateaAt time.Time `json:"createdAt"           db:"created_at"`
+	Expires   time.Time `json:"expires"             db:"expires"`
+	DeletedAt time.Time `json:"deletedAt,omitempty" db:"deleted_at"`
 }

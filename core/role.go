@@ -86,3 +86,10 @@ func (core *Role) Delete(deleteBy model.ID, name string) error {
 
 	return nil
 }
+
+func NewRole(database data.Role, validate *validator.Validate) *Role {
+	return &Role{
+		database: database,
+		validate: validate,
+	}
+}

@@ -14,8 +14,24 @@ import (
 
 type User struct {
 	database  data.User
+	role      *Role
 	validator *validator.Validate
 	argon2id  argon2id.Params
+}
+
+func (core *User) validateRoles(roles []string) (bool, error) {
+	for _, role := range roles {
+		_, err := core.role.GetByName(role)
+		if err != nil {
+			if errors.Is(err, errs.ErrRoleNotFoud) {
+				return false, nil
+			}
+
+			return false, fmt.Errorf("Error validating role: %w", err)
+		}
+	}
+
+	return true, nil
 }
 
 func (core *User) GetByID(id model.ID) (*model.User, error) {
@@ -89,7 +105,14 @@ func (core *User) Create(createdBy model.ID, partial model.UserPartial) error {
 		return err
 	}
 
-	// validar roles
+	valid, err := core.validateRoles(partial.Roles)
+	if err != nil {
+		return err
+	}
+
+	if !valid {
+		return errs.ErrInvalidRoles
+	}
 
 	_, err = core.GetByUsername(partial.Username)
 	if err != nil && !errors.Is(err, errs.ErrUserNotFoud) {
@@ -142,7 +165,14 @@ func (core *User) Update(userID model.ID, partial model.UserUpdate) error {
 		return err
 	}
 
-	// validar roles
+	valid, err := core.validateRoles(partial.Roles)
+	if err != nil {
+		return err
+	}
+
+	if !valid {
+		return errs.ErrInvalidRoles
+	}
 
 	user, err := core.GetByID(userID)
 	if err != nil {

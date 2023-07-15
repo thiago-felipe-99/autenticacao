@@ -10,7 +10,7 @@ type Role interface {
 	GetByName(name string) (*model.Role, error)
 	GetAll(paginate int, qt int) ([]model.Role, error)
 	Create(user model.Role) error
-	Delete(id model.ID) error
+	Delete(name string, deletedAt time.Time, deletedBy model.ID) error
 }
 
 type User interface {

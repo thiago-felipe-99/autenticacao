@@ -75,9 +75,9 @@ func (database *RoleSQL) Delete(name string, deletedAt time.Time, deletedBy mode
 		}
 	}(tx)
 
-	_, err = tx.Exec("DELETE FROM user_role WHERE name=$1", name)
+	_, err = tx.Exec("DELETE FROM users_roles WHERE name=$1", name)
 	if err != nil {
-		return fmt.Errorf("Error deleting user roles: %w", err)
+		return fmt.Errorf("Error deleting users roles: %w", err)
 	}
 
 	_, err = tx.Exec(

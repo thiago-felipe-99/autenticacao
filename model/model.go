@@ -27,7 +27,7 @@ func ParseID(id string) (ID, error) {
 }
 
 type RolePartial struct {
-	Name string `config:"name" json:"name" validate:"required"`
+	Name string `config:"name" json:"name" validate:"required,max=256"`
 }
 
 type Role struct {
@@ -39,23 +39,23 @@ type Role struct {
 }
 
 type UserPartial struct {
-	Name     string   `config:"name"     json:"name"     validate:"required"`
-	Username string   `config:"username" json:"username" validate:"required,alphanumunicode"`
-	Email    string   `config:"email"    json:"email"    validate:"required,email"`
+	Name     string   `config:"name"     json:"name"     validate:"required,max=256"`
+	Username string   `config:"username" json:"username" validate:"required,alphanumunicode,max=256"`
+	Email    string   `config:"email"    json:"email"    validate:"required,email,max=256"`
 	Password string   `config:"password" json:"password" validate:"required"`
 	Roles    []string `                  json:"roles"    validate:"omitempty"`
 }
 
 type UserUpdate struct {
-	Name     string   `json:"name"     validate:"omitempty"`
-	Username string   `json:"username" validate:"omitempty,alphanumunicode"`
-	Email    string   `json:"email"    validate:"omitempty,email"`
+	Name     string   `json:"name"     validate:"omitempty,max=256"`
+	Username string   `json:"username" validate:"omitempty,alphanumunicode,max=256"`
+	Email    string   `json:"email"    validate:"omitempty,email,max=256"`
 	Password string   `json:"password" validate:"omitempty"`
 	Roles    []string `json:"roles"    validate:"omitempty"`
 }
 
 type User struct {
-	ID        ID        `json:"id"                  db:"_id"`
+	ID        ID        `json:"id"                  db:"id"`
 	Name      string    `json:"name"                db:"name"`
 	Username  string    `json:"username"            db:"username"`
 	Email     string    `json:"email"               db:"email"`
@@ -75,8 +75,8 @@ type UserSessionPartial struct {
 }
 
 type UserSession struct {
-	ID        ID        `json:"id"                  db:"_id"`
-	UserID    ID        `json:"userId"              db:"user_id"`
+	ID        ID        `json:"id"                  db:"id"`
+	UserID    ID        `json:"userId"              db:"userid"`
 	CreateaAt time.Time `json:"createdAt"           db:"created_at"`
 	Expires   time.Time `json:"expires"             db:"expires"`
 	DeletedAt time.Time `json:"deletedAt,omitempty" db:"deleted_at"`

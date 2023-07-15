@@ -1,4 +1,4 @@
-package main
+package model
 
 import (
 	"fmt"
@@ -31,7 +31,6 @@ type RolePartial struct {
 }
 
 type Role struct {
-	ID        ID        `json:"id"                  bson:"_id"`
 	Name      string    `json:"name"                bson:"name"`
 	CreatedAt time.Time `json:"createdAt"           bson:"created_at"`
 	CreatedBy ID        `json:"createdBy"           bson:"created_by"`

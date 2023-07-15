@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 type ID uuid.UUID
@@ -55,17 +56,47 @@ type UserUpdate struct {
 }
 
 type User struct {
-	ID        ID        `json:"id"                  db:"id"`
-	Name      string    `json:"name"                db:"name"`
-	Username  string    `json:"username"            db:"username"`
-	Email     string    `json:"email"               db:"email"`
-	Password  string    `json:"password,omitempty"  db:"password"`
-	Roles     []string  `json:"roles,omitempty"     db:"roles"`
-	IsActive  bool      `json:"isActive"            db:"is_active"`
-	CreatedAt time.Time `json:"createdAt"           db:"created_at"`
-	CreatedBy ID        `json:"createdBy"           db:"created_by"`
-	DeletedAt time.Time `json:"deletedAt,omitempty" db:"deleted_at"`
-	DeletedBy ID        `json:"deletedBy,omitempty" db:"deleted_by"`
+	ID        ID        `json:"id"`
+	Name      string    `json:"name"`
+	Username  string    `json:"username"`
+	Email     string    `json:"email"`
+	Password  string    `json:"password,omitempty"`
+	Roles     []string  `json:"roles,omitempty"`
+	IsActive  bool      `json:"isActive"`
+	CreatedAt time.Time `json:"createdAt"`
+	CreatedBy ID        `json:"createdBy"`
+	DeletedAt time.Time `json:"deletedAt,omitempty"`
+	DeletedBy ID        `json:"deletedBy,omitempty"`
+}
+
+func (user *User) Postgres() UserPostgres {
+	return UserPostgres{
+		ID:        user.ID,
+		Name:      user.Name,
+		Username:  user.Username,
+		Email:     user.Email,
+		Password:  user.Password,
+		IsActive:  user.IsActive,
+		Roles:     user.Roles,
+		CreatedAt: user.CreatedAt,
+		CreatedBy: user.CreatedBy,
+		DeletedAt: user.DeletedAt,
+		DeletedBy: user.DeletedBy,
+	}
+}
+
+type UserPostgres struct {
+	ID        ID             `db:"id"`
+	Name      string         `db:"name"`
+	Username  string         `db:"username"`
+	Email     string         `db:"email"`
+	Password  string         `db:"password"`
+	Roles     pq.StringArray `db:"roles"`
+	IsActive  bool           `db:"is_active"`
+	CreatedAt time.Time      `db:"created_at"`
+	CreatedBy ID             `db:"created_by"`
+	DeletedAt time.Time      `db:"deleted_at"`
+	DeletedBy ID             `db:"deleted_by"`
 }
 
 type UserSessionPartial struct {

@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS
     email VARCHAR(256) NOT NULL,
     password VARCHAR(256) NOT NULL,
     is_active boolean NOT NULL,
+    roles VARCHAR(256)[] NOT NULL,
     created_at timestamp with time zone NOT NULL,
     created_by uuid NOT NULL,
     deleted_at timestamp with time zone NOT NULL,

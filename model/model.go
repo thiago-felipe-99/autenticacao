@@ -69,8 +69,8 @@ type User struct {
 }
 
 type UserSessionPartial struct {
-	Name     string `json:"name"     validate:"required_without=Email,excluded_with=Email"`
-	Email    string `json:"email"    validate:"required_without=Name,excluded_with=Name,omitempty,email"`
+	Username string `json:"username" validate:"required_without=Email,excluded_with=Email"`
+	Email    string `json:"email"    validate:"required_without=Username,excluded_with=Username,omitempty,email"`
 	Password string `json:"password" validate:"required"`
 }
 

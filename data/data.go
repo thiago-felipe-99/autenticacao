@@ -1,6 +1,10 @@
 package data
 
-import "github.com/thiago-felipe-99/autenticacao/model"
+import (
+	"time"
+
+	"github.com/thiago-felipe-99/autenticacao/model"
+)
 
 type Role interface {
 	GetByName(name string) (*model.Role, error)
@@ -11,12 +15,13 @@ type Role interface {
 
 type User interface {
 	GetByID(id model.ID) (*model.User, error)
+	GetByUsername(username string) (*model.User, error)
+	GetByEmail(email string) (*model.User, error)
 	GetAll(paginate int, qt int) ([]model.User, error)
 	GetByRole(role string, paginate int, qt int) ([]model.User, error)
-	GetRoles() ([]model.Role, error)
 	Create(user model.User) error
 	Update(user model.User) error
-	Delete(id model.ID) error
+	Delete(id model.ID, deletedAt time.Time, deletedBy model.ID) error
 }
 
 type UserSession interface {

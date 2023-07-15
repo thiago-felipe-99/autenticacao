@@ -43,7 +43,15 @@ type UserPartial struct {
 	Username string   `config:"username" json:"username" validate:"required,alphanumunicode"`
 	Email    string   `config:"email"    json:"email"    validate:"required,email"`
 	Password string   `config:"password" json:"password" validate:"required"`
-	Roles    []string `                  json:"roles"    validate:""`
+	Roles    []string `                  json:"roles"    validate:"omitempty"`
+}
+
+type UserUpdate struct {
+	Name     string   `json:"name"     validate:"omitempty"`
+	Username string   `json:"username" validate:"omitempty,alphanumunicode"`
+	Email    string   `json:"email"    validate:"omitempty,email"`
+	Password string   `json:"password" validate:"omitempty"`
+	Roles    []string `json:"roles"    validate:"omitempty"`
 }
 
 type User struct {

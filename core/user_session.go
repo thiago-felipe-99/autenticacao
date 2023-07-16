@@ -19,51 +19,51 @@ type UserSession struct {
 	expires   time.Duration
 }
 
-func (core *UserSession) GetByID(id model.ID) (*model.UserSession, error) {
-	userSession, err := core.database.GetByID(id)
+func (u *UserSession) GetByID(id model.ID) (*model.UserSession, error) {
+	userSession, err := u.database.GetByID(id)
 	if err != nil {
 		if errors.Is(err, errs.ErrUserSessionNotFoud) {
-			return nil, err
+			return nil, errs.ErrUserSessionNotFoud
 		}
 
-		return nil, fmt.Errorf("Error getting user session from database: %w", err)
+		return nil, fmt.Errorf("error getting user session from database: %w", err)
 	}
 
 	return userSession, nil
 }
 
-func (core *UserSession) GetAll(paginate int, qt int) ([]model.UserSession, error) {
-	userSessions, err := core.database.GetAll(paginate, qt)
+func (u *UserSession) GetAll(paginate int, qt int) ([]model.UserSession, error) {
+	userSessions, err := u.database.GetAll(paginate, qt)
 	if err != nil {
 		if errors.Is(err, errs.ErrUserSessionNotFoud) {
-			return nil, err
+			return nil, errs.ErrUserSessionNotFoud
 		}
 
-		return nil, fmt.Errorf("Error getting users sessions from database: %w", err)
+		return nil, fmt.Errorf("error getting users sessions from database: %w", err)
 	}
 
 	return userSessions, nil
 }
 
-func (core *UserSession) GetByUserID(
+func (u *UserSession) GetByUserID(
 	userID model.ID,
 	paginate int,
 	qt int,
 ) ([]model.UserSession, error) {
-	userSessions, err := core.database.GetByUserID(userID, paginate, qt)
+	userSessions, err := u.database.GetByUserID(userID, paginate, qt)
 	if err != nil {
 		if errors.Is(err, errs.ErrUserSessionNotFoud) {
-			return nil, err
+			return nil, errs.ErrUserSessionNotFoud
 		}
 
-		return nil, fmt.Errorf("Error getting users sessions from database: %w", err)
+		return nil, fmt.Errorf("error getting users sessions from database: %w", err)
 	}
 
 	return userSessions, nil
 }
 
-func (core *UserSession) Create(partial model.UserSessionPartial) (*model.UserSession, error) {
-	err := validate(core.validator, partial)
+func (u *UserSession) Create(partial model.UserSessionPartial) (*model.UserSession, error) {
+	err := validate(u.validator, partial)
 	if err != nil {
 		return nil, err
 	}
@@ -71,9 +71,9 @@ func (core *UserSession) Create(partial model.UserSessionPartial) (*model.UserSe
 	var user *model.User
 
 	if partial.Username != "" {
-		user, err = core.user.GetByUsername(partial.Username)
+		user, err = u.user.GetByUsername(partial.Username)
 	} else {
-		user, err = core.user.GetByEmail(partial.Email)
+		user, err = u.user.GetByEmail(partial.Email)
 	}
 
 	if err != nil {
@@ -82,7 +82,7 @@ func (core *UserSession) Create(partial model.UserSessionPartial) (*model.UserSe
 
 	equal, _, err := argon2id.CheckHash(partial.Password, user.Password)
 	if err != nil {
-		return nil, fmt.Errorf("Erro checking password: %w", err)
+		return nil, fmt.Errorf("erro checking password: %w", err)
 	}
 
 	if !equal {
@@ -93,20 +93,20 @@ func (core *UserSession) Create(partial model.UserSessionPartial) (*model.UserSe
 		ID:        model.NewID(),
 		UserID:    user.ID,
 		CreateaAt: time.Now(),
-		Expires:   time.Now().Add(core.expires),
+		Expires:   time.Now().Add(u.expires),
 		DeletedAt: time.Time{},
 	}
 
-	err = core.database.Create(userSession)
+	err = u.database.Create(userSession)
 	if err != nil {
-		return nil, fmt.Errorf("Error creating user session on database: %w", err)
+		return nil, fmt.Errorf("error creating user session on database: %w", err)
 	}
 
 	return &userSession, nil
 }
 
-func (core *UserSession) Refresh(id model.ID) (*model.UserSession, error) {
-	current, err := core.Delete(id)
+func (u *UserSession) Refresh(id model.ID) (*model.UserSession, error) {
+	current, err := u.Delete(id)
 	if err != nil {
 		return nil, err
 	}
@@ -115,27 +115,27 @@ func (core *UserSession) Refresh(id model.ID) (*model.UserSession, error) {
 		ID:        model.NewID(),
 		UserID:    current.UserID,
 		CreateaAt: time.Now(),
-		Expires:   time.Now().Add(core.expires),
+		Expires:   time.Now().Add(u.expires),
 		DeletedAt: time.Time{},
 	}
 
-	err = core.database.Create(userSession)
+	err = u.database.Create(userSession)
 	if err != nil {
-		return nil, fmt.Errorf("Error creating user session on database: %w", err)
+		return nil, fmt.Errorf("error creating user session on database: %w", err)
 	}
 
 	return &userSession, nil
 }
 
-func (core *UserSession) Delete(id model.ID) (*model.UserSession, error) {
-	userSession, err := core.GetByID(id)
+func (u *UserSession) Delete(id model.ID) (*model.UserSession, error) {
+	userSession, err := u.GetByID(id)
 	if err != nil {
 		return nil, err
 	}
 
-	err = core.database.Delete(id, time.Now())
+	err = u.database.Delete(id, time.Now())
 	if err != nil {
-		return nil, fmt.Errorf("Error deleting user session from database")
+		return nil, fmt.Errorf("error deleting user session from database: %w", err)
 	}
 
 	return userSession, nil

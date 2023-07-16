@@ -70,19 +70,19 @@ type User struct {
 	DeletedBy ID        `json:"deletedBy,omitempty"`
 }
 
-func (user *User) Postgres() *UserPostgres {
+func (u *User) Postgres() *UserPostgres {
 	return &UserPostgres{
-		ID:        user.ID,
-		Name:      user.Name,
-		Username:  user.Username,
-		Email:     user.Email,
-		Password:  user.Password,
-		IsActive:  user.IsActive,
-		Roles:     user.Roles,
-		CreatedAt: user.CreatedAt,
-		CreatedBy: user.CreatedBy,
-		DeletedAt: user.DeletedAt,
-		DeletedBy: user.DeletedBy,
+		ID:        u.ID,
+		Name:      u.Name,
+		Username:  u.Username,
+		Email:     u.Email,
+		Password:  u.Password,
+		IsActive:  u.IsActive,
+		Roles:     u.Roles,
+		CreatedAt: u.CreatedAt,
+		CreatedBy: u.CreatedBy,
+		DeletedAt: u.DeletedAt,
+		DeletedBy: u.DeletedBy,
 	}
 }
 
@@ -100,19 +100,19 @@ type UserPostgres struct {
 	DeletedBy ID             `db:"deleted_by"`
 }
 
-func (user *UserPostgres) User() *User {
+func (u *UserPostgres) User() *User {
 	return &User{
-		ID:        user.ID,
-		Name:      user.Name,
-		Username:  user.Username,
-		Email:     user.Email,
-		Password:  user.Password,
-		IsActive:  user.IsActive,
-		Roles:     user.Roles,
-		CreatedAt: user.CreatedAt,
-		CreatedBy: user.CreatedBy,
-		DeletedAt: user.DeletedAt,
-		DeletedBy: user.DeletedBy,
+		ID:        u.ID,
+		Name:      u.Name,
+		Username:  u.Username,
+		Email:     u.Email,
+		Password:  u.Password,
+		IsActive:  u.IsActive,
+		Roles:     u.Roles,
+		CreatedAt: u.CreatedAt,
+		CreatedBy: u.CreatedBy,
+		DeletedAt: u.DeletedAt,
+		DeletedBy: u.DeletedBy,
 	}
 }
 

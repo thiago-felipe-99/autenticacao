@@ -25,3 +25,7 @@ up: docker_up sleep migrate_up
 
 .PHONY: down
 down: migrate_down docker_down
+
+.PHONY: lint
+lint:
+	golangci-lint run --fix ./...

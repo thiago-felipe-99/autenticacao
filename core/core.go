@@ -12,12 +12,12 @@ type ModelInvalidError struct {
 	invalid validator.ValidationErrors
 }
 
-func (err ModelInvalidError) Error() string {
-	return err.invalid.Error()
+func (m ModelInvalidError) Error() string {
+	return m.invalid.Error()
 }
 
-func (err ModelInvalidError) Translate(language ut.Translator) string {
-	messages := err.invalid.Translate(language)
+func (m ModelInvalidError) Translate(language ut.Translator) string {
+	messages := m.invalid.Translate(language)
 
 	messageSend := ""
 	for _, message := range messages {

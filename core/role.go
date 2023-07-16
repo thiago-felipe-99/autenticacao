@@ -16,39 +16,39 @@ type Role struct {
 	validate *validator.Validate
 }
 
-func (core *Role) GetByName(name string) (*model.Role, error) {
-	role, err := core.database.GetByName(name)
+func (r *Role) GetByName(name string) (*model.Role, error) {
+	role, err := r.database.GetByName(name)
 	if err != nil {
 		if errors.Is(err, errs.ErrRoleNotFoud) {
-			return nil, err
+			return nil, errs.ErrRoleNotFoud
 		}
 
-		return nil, fmt.Errorf("Error getting role from database: %w", err)
+		return nil, fmt.Errorf("error getting role from database: %w", err)
 	}
 
 	return role, nil
 }
 
-func (core *Role) GetAll(paginate int, qt int) ([]model.Role, error) {
-	roles, err := core.database.GetAll(paginate, qt)
+func (r *Role) GetAll(paginate int, qt int) ([]model.Role, error) {
+	roles, err := r.database.GetAll(paginate, qt)
 	if err != nil {
 		if errors.Is(err, errs.ErrRoleNotFoud) {
-			return nil, err
+			return nil, errs.ErrRoleNotFoud
 		}
 
-		return nil, fmt.Errorf("Error getting role from database: %w", err)
+		return nil, fmt.Errorf("error getting role from database: %w", err)
 	}
 
 	return roles, nil
 }
 
-func (core *Role) Create(createdBy model.ID, partial model.RolePartial) error {
-	err := validate(core.validate, partial)
+func (r *Role) Create(createdBy model.ID, partial model.RolePartial) error {
+	err := validate(r.validate, partial)
 	if err != nil {
 		return err
 	}
 
-	_, err = core.GetByName(partial.Name)
+	_, err = r.GetByName(partial.Name)
 	if err != nil && !errors.Is(err, errs.ErrRoleNotFoud) {
 		return err
 	}
@@ -65,23 +65,23 @@ func (core *Role) Create(createdBy model.ID, partial model.RolePartial) error {
 		DeletedBy: model.ID{},
 	}
 
-	err = core.database.Create(role)
+	err = r.database.Create(role)
 	if err != nil {
-		return fmt.Errorf("Error creating role in the database: %w", err)
+		return fmt.Errorf("error creating role in the database: %w", err)
 	}
 
 	return nil
 }
 
-func (core *Role) Delete(deleteBy model.ID, name string) error {
-	_, err := core.GetByName(name)
+func (r *Role) Delete(deleteBy model.ID, name string) error {
+	_, err := r.GetByName(name)
 	if err != nil {
 		return err
 	}
 
-	err = core.database.Delete(name, time.Now(), deleteBy)
+	err = r.database.Delete(name, time.Now(), deleteBy)
 	if err != nil {
-		return fmt.Errorf("Error deleting role from database: %w", err)
+		return fmt.Errorf("error deleting role from database: %w", err)
 	}
 
 	return nil

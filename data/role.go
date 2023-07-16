@@ -15,10 +15,10 @@ type RoleSQL struct {
 	db *sqlx.DB
 }
 
-func (database *RoleSQL) GetByName(name string) (*model.Role, error) {
-	role := &model.Role{}
+func (r *RoleSQL) GetByName(name string) (*model.Role, error) {
+	role := &model.Role{} //nolint: exhaustruct
 
-	err := database.db.Get(
+	err := r.db.Get(
 		role,
 		`SELECT 
 			name, created_at, created_by, deleted_at, deleted_by 
@@ -33,16 +33,16 @@ func (database *RoleSQL) GetByName(name string) (*model.Role, error) {
 			return nil, errs.ErrRoleNotFoud
 		}
 
-		return nil, fmt.Errorf("Error get role by name in database: %w", err)
+		return nil, fmt.Errorf("error get role by name in database: %w", err)
 	}
 
 	return role, nil
 }
 
-func (database *RoleSQL) GetAll(paginate int, qt int) ([]model.Role, error) {
+func (r *RoleSQL) GetAll(paginate int, qt int) ([]model.Role, error) {
 	role := []model.Role{}
 
-	err := database.db.Select(
+	err := r.db.Select(
 		role,
 		`SELECT 
 			name, created_at, created_by, deleted_at, deleted_by 
@@ -58,14 +58,14 @@ func (database *RoleSQL) GetAll(paginate int, qt int) ([]model.Role, error) {
 			return nil, errs.ErrRoleNotFoud
 		}
 
-		return nil, fmt.Errorf("Error get role by name in database: %w", err)
+		return nil, fmt.Errorf("error get role by name in database: %w", err)
 	}
 
 	return role, nil
 }
 
-func (database *RoleSQL) Create(role model.Role) error {
-	_, err := database.db.NamedExec(
+func (r *RoleSQL) Create(role model.Role) error {
+	_, err := r.db.NamedExec(
 		`INSERT INTO role 
 			(name, created_at, created_by, deleted_at, deleted_by)
 		VALUES 
@@ -73,30 +73,30 @@ func (database *RoleSQL) Create(role model.Role) error {
 		role,
 	)
 	if err != nil {
-		return fmt.Errorf("Error inserting role: %w", err)
+		return fmt.Errorf("error inserting role: %w", err)
 	}
 
 	return nil
 }
 
-func (database *RoleSQL) Delete(name string, deletedAt time.Time, deletedBy model.ID) (err error) {
-	tx, err := database.db.Begin()
+func (r *RoleSQL) Delete(name string, deletedAt time.Time, deletedBy model.ID) (err error) {
+	tx, err := r.db.Begin()
 	if err != nil {
-		return fmt.Errorf("Error beging transaction: %w", err)
+		return fmt.Errorf("error beging transaction: %w", err)
 	}
 
 	defer func(tx *sql.Tx) {
 		if err != nil {
 			newErr := tx.Rollback()
 			if newErr != nil {
-				err = fmt.Errorf("Error roolback transaction: %w", errors.Join(newErr, err))
+				err = fmt.Errorf("error roolback transaction: %w", errors.Join(newErr, err))
 			}
 		}
 	}(tx)
 
 	_, err = tx.Exec("UPDATE users SET roles = array_remove(roles, $1)", name)
 	if err != nil {
-		return fmt.Errorf("Error deleting users roles: %w", err)
+		return fmt.Errorf("error deleting users roles: %w", err)
 	}
 
 	_, err = tx.Exec(
@@ -106,18 +106,18 @@ func (database *RoleSQL) Delete(name string, deletedAt time.Time, deletedBy mode
 		name,
 	)
 	if err != nil {
-		return fmt.Errorf("Error deleting role: %w", err)
+		return fmt.Errorf("error deleting role: %w", err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return fmt.Errorf("Error commiting transaction: %w", err)
+		return fmt.Errorf("error committing transaction: %w", err)
 	}
 
 	return nil
 }
 
-var _ Role = &RoleSQL{}
+var _ Role = &RoleSQL{} //nolint: exhaustruct
 
 func NewRoleSQL(db *sqlx.DB) *RoleSQL {
 	return &RoleSQL{

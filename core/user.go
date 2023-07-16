@@ -19,93 +19,93 @@ type User struct {
 	argon2id  argon2id.Params
 }
 
-func (core *User) validateRoles(roles []string) (bool, error) {
+func (u *User) validateRoles(roles []string) (bool, error) {
 	for _, role := range roles {
-		_, err := core.role.GetByName(role)
+		_, err := u.role.GetByName(role)
 		if err != nil {
 			if errors.Is(err, errs.ErrRoleNotFoud) {
 				return false, nil
 			}
 
-			return false, fmt.Errorf("Error validating role: %w", err)
+			return false, fmt.Errorf("error validating role: %w", err)
 		}
 	}
 
 	return true, nil
 }
 
-func (core *User) GetByID(id model.ID) (*model.User, error) {
-	user, err := core.database.GetByID(id)
+func (u *User) GetByID(id model.ID) (*model.User, error) {
+	user, err := u.database.GetByID(id)
 	if err != nil {
 		if errors.Is(err, errs.ErrUserNotFoud) {
-			return nil, err
+			return nil, errs.ErrUserNotFoud
 		}
 
-		return nil, fmt.Errorf("Error on getting user from database: %w", err)
+		return nil, fmt.Errorf("error on getting user from database: %w", err)
 	}
 
 	return user, nil
 }
 
-func (core *User) GetByUsername(username string) (*model.User, error) {
-	user, err := core.database.GetByUsername(username)
+func (u *User) GetByUsername(username string) (*model.User, error) {
+	user, err := u.database.GetByUsername(username)
 	if err != nil {
 		if errors.Is(err, errs.ErrUserNotFoud) {
-			return nil, err
+			return nil, errs.ErrUserNotFoud
 		}
 
-		return nil, fmt.Errorf("Error on getting user from database: %w", err)
+		return nil, fmt.Errorf("error on getting user from database: %w", err)
 	}
 
 	return user, nil
 }
 
-func (core *User) GetByEmail(email string) (*model.User, error) {
-	user, err := core.database.GetByEmail(email)
+func (u *User) GetByEmail(email string) (*model.User, error) {
+	user, err := u.database.GetByEmail(email)
 	if err != nil {
 		if errors.Is(err, errs.ErrUserNotFoud) {
-			return nil, err
+			return nil, errs.ErrUserNotFoud
 		}
 
-		return nil, fmt.Errorf("Error on getting user from database: %w", err)
+		return nil, fmt.Errorf("error on getting user from database: %w", err)
 	}
 
 	return user, nil
 }
 
-func (core *User) GetAll(paginate int, qt int) ([]model.User, error) {
-	users, err := core.database.GetAll(paginate, qt)
+func (u *User) GetAll(paginate int, qt int) ([]model.User, error) {
+	users, err := u.database.GetAll(paginate, qt)
 	if err != nil {
 		if errors.Is(err, errs.ErrUserNotFoud) {
-			return []model.User{}, err
+			return []model.User{}, errs.ErrUserNotFoud
 		}
 
-		return nil, fmt.Errorf("Error on getting user from database: %w", err)
+		return nil, fmt.Errorf("error on getting user from database: %w", err)
 	}
 
 	return users, nil
 }
 
-func (core *User) GetByRole(roles []string, paginate int, qt int) ([]model.User, error) {
-	users, err := core.database.GetByRoles(roles, paginate, qt)
+func (u *User) GetByRole(roles []string, paginate int, qt int) ([]model.User, error) {
+	users, err := u.database.GetByRoles(roles, paginate, qt)
 	if err != nil {
 		if errors.Is(err, errs.ErrUserNotFoud) {
-			return []model.User{}, err
+			return []model.User{}, errs.ErrUserNotFoud
 		}
 
-		return nil, fmt.Errorf("Error on getting user from database: %w", err)
+		return nil, fmt.Errorf("error on getting user from database: %w", err)
 	}
 
 	return users, nil
 }
 
-func (core *User) Create(createdBy model.ID, partial model.UserPartial) error {
-	err := validate(core.validator, partial)
+func (u *User) Create(createdBy model.ID, partial model.UserPartial) error {
+	err := validate(u.validator, partial)
 	if err != nil {
 		return err
 	}
 
-	valid, err := core.validateRoles(partial.Roles)
+	valid, err := u.validateRoles(partial.Roles)
 	if err != nil {
 		return err
 	}
@@ -114,7 +114,7 @@ func (core *User) Create(createdBy model.ID, partial model.UserPartial) error {
 		return errs.ErrInvalidRoles
 	}
 
-	_, err = core.GetByUsername(partial.Username)
+	_, err = u.GetByUsername(partial.Username)
 	if err != nil && !errors.Is(err, errs.ErrUserNotFoud) {
 		return err
 	}
@@ -123,7 +123,7 @@ func (core *User) Create(createdBy model.ID, partial model.UserPartial) error {
 		return errs.ErrUsernameAlreadyExist
 	}
 
-	_, err = core.GetByEmail(partial.Email)
+	_, err = u.GetByEmail(partial.Email)
 	if err != nil && !errors.Is(err, errs.ErrUserNotFoud) {
 		return err
 	}
@@ -132,7 +132,7 @@ func (core *User) Create(createdBy model.ID, partial model.UserPartial) error {
 		return errs.ErrEmailAlreadyExist
 	}
 
-	hash, err := argon2id.CreateHash(partial.Password, &core.argon2id)
+	hash, err := argon2id.CreateHash(partial.Password, &u.argon2id)
 	if err != nil {
 		return fmt.Errorf("error creating password hash: %w", err)
 	}
@@ -151,21 +151,21 @@ func (core *User) Create(createdBy model.ID, partial model.UserPartial) error {
 		DeletedBy: model.ID{},
 	}
 
-	err = core.database.Create(user)
+	err = u.database.Create(user)
 	if err != nil {
-		return fmt.Errorf("Error creating user in the database: %w", err)
+		return fmt.Errorf("error creating user in the database: %w", err)
 	}
 
 	return nil
 }
 
-func (core *User) Update(userID model.ID, partial model.UserUpdate) error {
-	err := validate(core.validator, partial)
+func (u *User) Update(userID model.ID, partial model.UserUpdate) error {
+	err := validate(u.validator, partial)
 	if err != nil {
 		return err
 	}
 
-	valid, err := core.validateRoles(partial.Roles)
+	valid, err := u.validateRoles(partial.Roles)
 	if err != nil {
 		return err
 	}
@@ -174,7 +174,7 @@ func (core *User) Update(userID model.ID, partial model.UserUpdate) error {
 		return errs.ErrInvalidRoles
 	}
 
-	user, err := core.GetByID(userID)
+	user, err := u.GetByID(userID)
 	if err != nil {
 		return err
 	}
@@ -184,7 +184,7 @@ func (core *User) Update(userID model.ID, partial model.UserUpdate) error {
 	}
 
 	if partial.Username != "" {
-		_, err = core.GetByUsername(partial.Username)
+		_, err = u.GetByUsername(partial.Username)
 		if err != nil && !errors.Is(err, errs.ErrUserNotFoud) {
 			return err
 		}
@@ -197,7 +197,7 @@ func (core *User) Update(userID model.ID, partial model.UserUpdate) error {
 	}
 
 	if partial.Email != "" {
-		_, err = core.GetByEmail(partial.Email)
+		_, err = u.GetByEmail(partial.Email)
 		if err != nil && !errors.Is(err, errs.ErrUserNotFoud) {
 			return err
 		}
@@ -210,7 +210,7 @@ func (core *User) Update(userID model.ID, partial model.UserUpdate) error {
 	}
 
 	if partial.Password != "" {
-		hash, err := argon2id.CreateHash(partial.Password, &core.argon2id)
+		hash, err := argon2id.CreateHash(partial.Password, &u.argon2id)
 		if err != nil {
 			return fmt.Errorf("error creating password hash: %w", err)
 		}
@@ -222,21 +222,21 @@ func (core *User) Update(userID model.ID, partial model.UserUpdate) error {
 		user.Roles = partial.Roles
 	}
 
-	err = core.database.Update(*user)
+	err = u.database.Update(*user)
 	if err != nil {
-		return fmt.Errorf("Error creating user in the database: %w", err)
+		return fmt.Errorf("error creating user in the database: %w", err)
 	}
 
 	return nil
 }
 
-func (core *User) Delete(userID model.ID, deleteByID model.ID) error {
-	user, err := core.GetByID(userID)
+func (u *User) Delete(userID model.ID, deleteByID model.ID) error {
+	user, err := u.GetByID(userID)
 	if err != nil {
 		return err
 	}
 
-	err = core.database.Delete(user.ID, time.Now(), deleteByID)
+	err = u.database.Delete(user.ID, time.Now(), deleteByID)
 	if err != nil {
 		return fmt.Errorf("error deleting user from database: %w", err)
 	}

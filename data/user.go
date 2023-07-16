@@ -16,10 +16,10 @@ type UserSQL struct {
 	db *sqlx.DB
 }
 
-func (database *UserSQL) GetByID(id model.ID) (*model.User, error) {
-	user := &model.UserPostgres{}
+func (u *UserSQL) GetByID(id model.ID) (*model.User, error) {
+	user := &model.UserPostgres{} //nolint: exhaustruct
 
-	err := database.db.Get(
+	err := u.db.Get(
 		user,
 		`SELECT 
 			id, name, username, email, password, roles, is_active, created_at, created_by, deleted_at, deleted_by
@@ -36,16 +36,16 @@ func (database *UserSQL) GetByID(id model.ID) (*model.User, error) {
 			return nil, errs.ErrUserNotFoud
 		}
 
-		return nil, fmt.Errorf("Error get user by id in database: %w", err)
+		return nil, fmt.Errorf("error get user by id in database: %w", err)
 	}
 
 	return user.User(), nil
 }
 
-func (database *UserSQL) GetByUsername(username string) (*model.User, error) {
-	user := &model.UserPostgres{}
+func (u *UserSQL) GetByUsername(username string) (*model.User, error) {
+	user := &model.UserPostgres{} //nolint: exhaustruct
 
-	err := database.db.Get(
+	err := u.db.Get(
 		user,
 		`SELECT 
 			id, name, username, email, password, roles, is_active, created_at, created_by, deleted_at, deleted_by
@@ -62,16 +62,16 @@ func (database *UserSQL) GetByUsername(username string) (*model.User, error) {
 			return nil, errs.ErrUserNotFoud
 		}
 
-		return nil, fmt.Errorf("Error get user by username in database: %w", err)
+		return nil, fmt.Errorf("error get user by username in database: %w", err)
 	}
 
 	return user.User(), nil
 }
 
-func (database *UserSQL) GetByEmail(email string) (*model.User, error) {
-	user := &model.UserPostgres{}
+func (u *UserSQL) GetByEmail(email string) (*model.User, error) {
+	user := &model.UserPostgres{} //nolint: exhaustruct
 
-	err := database.db.Get(
+	err := u.db.Get(
 		user,
 		`SELECT 
 			id, name, username, email, password, roles, is_active, created_at, created_by, deleted_at, deleted_by
@@ -88,16 +88,16 @@ func (database *UserSQL) GetByEmail(email string) (*model.User, error) {
 			return nil, errs.ErrUserNotFoud
 		}
 
-		return nil, fmt.Errorf("Error get user by email in database: %w", err)
+		return nil, fmt.Errorf("error get user by email in database: %w", err)
 	}
 
 	return user.User(), nil
 }
 
-func (database *UserSQL) GetAll(paginate int, qt int) ([]model.User, error) {
+func (u *UserSQL) GetAll(paginate int, qt int) ([]model.User, error) {
 	partial := []model.UserPostgres{}
 
-	err := database.db.Select(
+	err := u.db.Select(
 		partial,
 		`SELECT 
 			id, name, username, email, password, roles, is_active, created_at, created_by, deleted_at, deleted_by
@@ -113,7 +113,7 @@ func (database *UserSQL) GetAll(paginate int, qt int) ([]model.User, error) {
 			return nil, errs.ErrUserNotFoud
 		}
 
-		return nil, fmt.Errorf("Error get users in database: %w", err)
+		return nil, fmt.Errorf("error get users in database: %w", err)
 	}
 
 	users := make([]model.User, 0, len(partial))
@@ -124,10 +124,10 @@ func (database *UserSQL) GetAll(paginate int, qt int) ([]model.User, error) {
 	return users, nil
 }
 
-func (database *UserSQL) GetByRoles(roles []string, paginate int, qt int) ([]model.User, error) {
+func (u *UserSQL) GetByRoles(roles []string, paginate int, qt int) ([]model.User, error) {
 	partial := []model.UserPostgres{}
 
-	err := database.db.Select(
+	err := u.db.Select(
 		partial,
 		`SELECT 
 			id, name, username, email, password, roles, is_active, created_at, created_by, deleted_at, deleted_by
@@ -146,7 +146,7 @@ func (database *UserSQL) GetByRoles(roles []string, paginate int, qt int) ([]mod
 			return nil, errs.ErrUserNotFoud
 		}
 
-		return nil, fmt.Errorf("Error get users by role in database: %w", err)
+		return nil, fmt.Errorf("error get users by role in database: %w", err)
 	}
 
 	users := make([]model.User, 0, len(partial))
@@ -157,8 +157,8 @@ func (database *UserSQL) GetByRoles(roles []string, paginate int, qt int) ([]mod
 	return users, nil
 }
 
-func (database *UserSQL) Create(user model.User) error {
-	_, err := database.db.NamedExec(
+func (u *UserSQL) Create(user model.User) error {
+	_, err := u.db.NamedExec(
 		`INSERT INTO users
 			(id, name, username, email, password, roles, is_active, created_at, created_by, deleted_at, deleted_by)
 		VALUES 
@@ -166,14 +166,14 @@ func (database *UserSQL) Create(user model.User) error {
 		user.Postgres(),
 	)
 	if err != nil {
-		return fmt.Errorf("Error inserting user: %w", err)
+		return fmt.Errorf("error inserting user: %w", err)
 	}
 
 	return nil
 }
 
-func (database *UserSQL) Update(user model.User) error {
-	_, err := database.db.NamedExec(
+func (u *UserSQL) Update(user model.User) error {
+	_, err := u.db.NamedExec(
 		`UPDATE users SET
 			name = :name, 
 			username = :username, 
@@ -186,27 +186,27 @@ func (database *UserSQL) Update(user model.User) error {
 		user.Postgres(),
 	)
 	if err != nil {
-		return fmt.Errorf("Error updating user: %w", err)
+		return fmt.Errorf("error updating user: %w", err)
 	}
 
 	return nil
 }
 
-func (database *UserSQL) Delete(id model.ID, deletedAt time.Time, deletedBy model.ID) error {
-	_, err := database.db.Exec(
+func (u *UserSQL) Delete(id model.ID, deletedAt time.Time, deletedBy model.ID) error {
+	_, err := u.db.Exec(
 		"UPDATE users SET deleted_at=$1, deleted_by=$2 WHERE id=$3",
 		deletedAt,
 		deletedBy,
 		id,
 	)
 	if err != nil {
-		return fmt.Errorf("Error deleting user: %w", err)
+		return fmt.Errorf("error deleting user: %w", err)
 	}
 
 	return nil
 }
 
-var _ User = &UserSQL{}
+var _ User = &UserSQL{} //nolint: exhaustruct
 
 func NewUserSQL(db *sqlx.DB) *UserSQL {
 	return &UserSQL{

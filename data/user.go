@@ -124,7 +124,7 @@ func (database *UserSQL) GetAll(paginate int, qt int) ([]model.User, error) {
 	return users, nil
 }
 
-func (database *UserSQL) GetByRole(role string, paginate int, qt int) ([]model.User, error) {
+func (database *UserSQL) GetByRoles(roles []string, paginate int, qt int) ([]model.User, error) {
 	partial := []model.UserPostgres{}
 
 	err := database.db.Select(
@@ -137,7 +137,7 @@ func (database *UserSQL) GetByRole(role string, paginate int, qt int) ([]model.U
 			roles @> $1
 		LIMIT $2 
 		OFFSET $3`,
-		pq.StringArray{role},
+		pq.StringArray(roles),
 		qt,
 		qt*paginate,
 	)

@@ -18,7 +18,7 @@ type User interface {
 	GetByUsername(username string) (*model.User, error)
 	GetByEmail(email string) (*model.User, error)
 	GetAll(paginate int, qt int) ([]model.User, error)
-	GetByRole(role string, paginate int, qt int) ([]model.User, error)
+	GetByRoles(role []string, paginate int, qt int) ([]model.User, error)
 	Create(user model.User) error
 	Update(user model.User) error
 	Delete(id model.ID, deletedAt time.Time, deletedBy model.ID) error

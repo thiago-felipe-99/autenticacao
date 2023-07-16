@@ -86,8 +86,8 @@ func (core *User) GetAll(paginate int, qt int) ([]model.User, error) {
 	return users, nil
 }
 
-func (core *User) GetByRole(role string, paginate int, qt int) ([]model.User, error) {
-	users, err := core.database.GetByRole(role, paginate, qt)
+func (core *User) GetByRole(roles []string, paginate int, qt int) ([]model.User, error) {
+	users, err := core.database.GetByRoles(roles, paginate, qt)
 	if err != nil {
 		if errors.Is(err, errs.ErrUserNotFoud) {
 			return []model.User{}, err

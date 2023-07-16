@@ -28,7 +28,7 @@ func ParseID(id string) (ID, error) {
 }
 
 type RolePartial struct {
-	Name string `config:"name" json:"name" validate:"required,max=256"`
+	Name string `config:"name" json:"name" validate:"required,max=255"`
 }
 
 type Role struct {
@@ -40,19 +40,20 @@ type Role struct {
 }
 
 type UserPartial struct {
-	Name     string   `config:"name"     json:"name"     validate:"required,max=256"`
-	Username string   `config:"username" json:"username" validate:"required,alphanumunicode,max=256"`
-	Email    string   `config:"email"    json:"email"    validate:"required,email,max=256"`
+	Name     string   `config:"name"     json:"name"     validate:"required,max=255"`
+	Username string   `config:"username" json:"username" validate:"required,alphanumunicode,max=255"`
+	Email    string   `config:"email"    json:"email"    validate:"required,email,max=255"`
 	Password string   `config:"password" json:"password" validate:"required"`
 	Roles    []string `                  json:"roles"    validate:"omitempty"`
 }
 
 type UserUpdate struct {
-	Name     string   `json:"name"     validate:"omitempty,max=256"`
-	Username string   `json:"username" validate:"omitempty,alphanumunicode,max=256"`
-	Email    string   `json:"email"    validate:"omitempty,email,max=256"`
+	Name     string   `json:"name"     validate:"omitempty,max=255"`
+	Username string   `json:"username" validate:"omitempty,alphanumunicode,max=255"`
+	Email    string   `json:"email"    validate:"omitempty,email,max=255"`
 	Password string   `json:"password" validate:"omitempty"`
 	Roles    []string `json:"roles"    validate:"omitempty"`
+	IsActive *bool    `json:"isActive" validate:"omitempty"`
 }
 
 type User struct {
@@ -69,8 +70,8 @@ type User struct {
 	DeletedBy ID        `json:"deletedBy,omitempty"`
 }
 
-func (user *User) Postgres() UserPostgres {
-	return UserPostgres{
+func (user *User) Postgres() *UserPostgres {
+	return &UserPostgres{
 		ID:        user.ID,
 		Name:      user.Name,
 		Username:  user.Username,
@@ -97,6 +98,22 @@ type UserPostgres struct {
 	CreatedBy ID             `db:"created_by"`
 	DeletedAt time.Time      `db:"deleted_at"`
 	DeletedBy ID             `db:"deleted_by"`
+}
+
+func (user *UserPostgres) User() *User {
+	return &User{
+		ID:        user.ID,
+		Name:      user.Name,
+		Username:  user.Username,
+		Email:     user.Email,
+		Password:  user.Password,
+		IsActive:  user.IsActive,
+		Roles:     user.Roles,
+		CreatedAt: user.CreatedAt,
+		CreatedBy: user.CreatedBy,
+		DeletedAt: user.DeletedAt,
+		DeletedBy: user.DeletedBy,
+	}
 }
 
 type UserSessionPartial struct {

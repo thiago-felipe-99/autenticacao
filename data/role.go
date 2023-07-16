@@ -18,7 +18,16 @@ type RoleSQL struct {
 func (database *RoleSQL) GetByName(name string) (*model.Role, error) {
 	role := &model.Role{}
 
-	err := database.db.Get(role, "SELECT * FROM role WHERE name=$1", name)
+	err := database.db.Get(
+		role,
+		`SELECT 
+			name, created_at, created_by, deleted_at, deleted_by 
+		FROM 
+			role 
+		WHERE 
+		name=$1`,
+		name,
+	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, errs.ErrRoleNotFoud
@@ -33,7 +42,17 @@ func (database *RoleSQL) GetByName(name string) (*model.Role, error) {
 func (database *RoleSQL) GetAll(paginate int, qt int) ([]model.Role, error) {
 	role := []model.Role{}
 
-	err := database.db.Select(role, "SELECT * FROM role LIMIT $1 OFFSET $2", qt, qt*paginate)
+	err := database.db.Select(
+		role,
+		`SELECT 
+			name, created_at, created_by, deleted_at, deleted_by 
+		FROM 
+			role 
+		LIMIT $1 
+		OFFSET $2`,
+		qt,
+		qt*paginate,
+	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, errs.ErrRoleNotFoud
@@ -50,7 +69,7 @@ func (database *RoleSQL) Create(role model.Role) error {
 		`INSERT INTO role 
 			(name, created_at, created_by, deleted_at, deleted_by)
 		VALUES 
-			(name, created_at, created_by, deleted_at, deleted_by)`,
+			(:name, :created_at, :created_by, :deleted_at, :deleted_by)`,
 		role,
 	)
 	if err != nil {
@@ -75,7 +94,7 @@ func (database *RoleSQL) Delete(name string, deletedAt time.Time, deletedBy mode
 		}
 	}(tx)
 
-	_, err = tx.Exec("UPDATE users SET roles=array_remove(roles, $1)", name)
+	_, err = tx.Exec("UPDATE users SET roles = array_remove(roles, $1)", name)
 	if err != nil {
 		return fmt.Errorf("Error deleting users roles: %w", err)
 	}

@@ -184,10 +184,28 @@ func (core *User) Update(userID model.ID, partial model.UserUpdate) error {
 	}
 
 	if partial.Username != "" {
+		_, err = core.GetByUsername(partial.Username)
+		if err != nil && !errors.Is(err, errs.ErrUserNotFoud) {
+			return err
+		}
+
+		if err == nil {
+			return errs.ErrUsernameAlreadyExist
+		}
+
 		user.Username = partial.Username
 	}
 
 	if partial.Email != "" {
+		_, err = core.GetByEmail(partial.Email)
+		if err != nil && !errors.Is(err, errs.ErrUserNotFoud) {
+			return err
+		}
+
+		if err == nil {
+			return errs.ErrEmailAlreadyExist
+		}
+
 		user.Email = partial.Email
 	}
 

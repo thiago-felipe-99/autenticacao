@@ -3,6 +3,7 @@ package errs
 import "errors"
 
 var (
+	ErrInvalidID            = errors.New("ID is not a string")
 	ErrBodyValidate         = errors.New("unable to parse body")
 	ErrUserNotFoud          = errors.New("user not found")
 	ErrUsernameAlreadyExist = errors.New("username already exist")

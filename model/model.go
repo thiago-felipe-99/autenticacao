@@ -1,17 +1,34 @@
 package model
 
 import (
+	"database/sql/driver"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"
+	"github.com/thiago-felipe-99/autenticacao/errs"
 )
 
 type ID uuid.UUID
 
 func (id ID) String() string {
 	return uuid.UUID(id).String()
+}
+
+func (id ID) Value() (driver.Value, error) {
+	return id.String(), nil
+}
+
+func (id *ID) Scan(value any) error {
+	idString, okay := value.([]uint8)
+	if !okay {
+		return errs.ErrInvalidID
+	}
+
+	*id = ID(idString)
+
+	return nil
 }
 
 func NewID() ID {

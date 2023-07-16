@@ -29,3 +29,7 @@ down: migrate_down docker_down
 .PHONY: lint
 lint:
 	golangci-lint run --fix ./...
+
+.PHONY: test
+test:
+	go test ./...

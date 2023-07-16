@@ -13,6 +13,7 @@ linters-settings:
       - id 
       - qt 
       - tx
+      - db
 linters:
   enable:
     - errcheck

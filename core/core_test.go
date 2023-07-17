@@ -21,40 +21,40 @@ func createTempDB(t *testing.T, name string) *sqlx.DB {
 	urldb := url + "&dbname=" + dbname
 
 	db, err := sqlx.Connect("postgres", url)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	_, err = db.Exec("CREATE DATABASE " + dbname)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	err = db.Close()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	migrations, err := migrate.New("file://../data/migrations", urldb)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	err = migrations.Up()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	sourceerr, err := migrations.Close()
-	assert.Nil(t, sourceerr)
-	assert.Nil(t, err)
+	assert.NoError(t, sourceerr)
+	assert.NoError(t, err)
 
 	db, err = sqlx.Connect("postgres", urldb)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	t.Cleanup(func() {
 		err = db.Close()
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		// não é possível fazer drop do database conectado, precisa entrar no database padrão
 		db, err = sqlx.Connect("postgres", url)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		_, err = db.Exec("DROP DATABASE " + dbname)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		err = db.Close()
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 	})
 
 	return db

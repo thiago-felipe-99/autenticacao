@@ -23,11 +23,11 @@ func createTempRole(t *testing.T, role *core.Role, db *sqlx.DB) (model.ID, model
 	input := model.RolePartial{Name: gofakeit.Name()}
 
 	err := role.Create(id, input)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	t.Cleanup(func() {
 		_, err = db.Exec("DELETE FROM role WHERE name=$1", input.Name)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 	})
 
 	return id, input
@@ -86,11 +86,11 @@ func TestRoleCreate(t *testing.T) {
 		input := model.RolePartial{Name: gofakeit.Name()}
 
 		err := role.Create(id, input)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		t.Cleanup(func() {
 			_, err = db.Exec("DELETE FROM role WHERE name=$1", input.Name)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 		})
 	})
 }
@@ -115,7 +115,7 @@ func TestRoleGet(t *testing.T) {
 			t.Parallel()
 
 			roledb, err := role.GetByName(roleTmp)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			assert.Equal(t, roleTmp, roledb.Name)
 			assert.LessOrEqual(t, time.Since(roledb.CreatedAt), time.Second)
@@ -128,7 +128,7 @@ func TestRoleGet(t *testing.T) {
 		t.Parallel()
 
 		rolesdb, err := role.GetAll(0, qtRoles)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		assert.Equal(t, qtRoles, len(rolesdb))
 
@@ -144,7 +144,7 @@ func TestRoleGet(t *testing.T) {
 		t.Parallel()
 
 		rolesdb, err := role.GetAll(qtRoles, qtRoles)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.Equal(t, []model.Role{}, rolesdb)
 	})
 }
@@ -166,7 +166,7 @@ func TestRoleDelete(t *testing.T) {
 		rolesTmp[i] = roleTemp.Name
 
 		err := role.Delete(id, roleTemp.Name)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 	}
 
 	for _, roleTmp := range rolesTmp {
@@ -184,7 +184,7 @@ func TestRoleDelete(t *testing.T) {
 		t.Parallel()
 
 		rolesdb, err := role.GetAll(0, qtRoles)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		assert.Equal(t, qtRoles, len(rolesdb))
 

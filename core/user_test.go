@@ -1,7 +1,6 @@
 package core_test
 
 import (
-	"log"
 	"testing"
 	"time"
 
@@ -16,6 +15,82 @@ import (
 	"github.com/thiago-felipe-99/autenticacao/model"
 	"golang.org/x/exp/slices"
 )
+
+var invalidUserPartialInputs = []struct { //nolint:gochecknoglobals
+	name  string
+	input model.UserPartial
+}{
+	{"EmptyName", model.UserPartial{
+		Name:     "",
+		Username: gofakeit.Username(),
+		Email:    gofakeit.Email(),
+		Password: gofakeit.Password(true, true, true, true, true, 20),
+		Roles:    []string{},
+	}},
+	{"EmptyUsername", model.UserPartial{
+		Name:     gofakeit.Name(),
+		Username: "",
+		Email:    gofakeit.Email(),
+		Password: gofakeit.Password(true, true, true, true, true, 20),
+		Roles:    []string{},
+	}},
+	{"EmptyEmail", model.UserPartial{
+		Name:     gofakeit.Name(),
+		Username: gofakeit.Username(),
+		Email:    "",
+		Password: gofakeit.Password(true, true, true, true, true, 20),
+		Roles:    []string{},
+	}},
+	{"EmptyPassword", model.UserPartial{
+		Name:     gofakeit.Name(),
+		Username: gofakeit.Username(),
+		Email:    gofakeit.Email(),
+		Password: "",
+		Roles:    []string{},
+	}},
+	{"LongName", model.UserPartial{
+		Name:     gofakeit.LetterN(256),
+		Username: gofakeit.Username(),
+		Email:    gofakeit.Email(),
+		Password: gofakeit.Password(true, true, true, true, true, 20),
+		Roles:    []string{},
+	}},
+	{"LongUsername", model.UserPartial{
+		Name:     gofakeit.Name(),
+		Username: gofakeit.LetterN(256),
+		Email:    gofakeit.Email(),
+		Password: gofakeit.Password(true, true, true, true, true, 20),
+		Roles:    []string{},
+	}},
+	{"LongEmail", model.UserPartial{
+		Name:     gofakeit.Name(),
+		Username: gofakeit.Username(),
+		Email:    gofakeit.LetterN(256) + gofakeit.Email(),
+		Password: gofakeit.Password(true, true, true, true, true, 20),
+		Roles:    []string{},
+	}},
+	{"LongPassword", model.UserPartial{
+		Name:     gofakeit.Name(),
+		Username: gofakeit.Username(),
+		Email:    gofakeit.Email(),
+		Password: gofakeit.Password(true, true, true, true, true, 300),
+		Roles:    []string{},
+	}},
+	{"InvalidUsername", model.UserPartial{
+		Name:     gofakeit.Name(),
+		Username: gofakeit.Username() + "%$#¨",
+		Email:    gofakeit.Email(),
+		Password: gofakeit.Password(true, true, true, true, true, 20),
+		Roles:    []string{},
+	}},
+	{"InvalidEmail", model.UserPartial{
+		Name:     gofakeit.Name(),
+		Username: gofakeit.Username(),
+		Email:    gofakeit.LetterN(25),
+		Password: gofakeit.Password(true, true, true, true, true, 20),
+		Roles:    []string{},
+	}},
+}
 
 func createTempUser(
 	t *testing.T,
@@ -47,17 +122,17 @@ func createTempUser(
 	}
 
 	userID, err := user.Create(id, input)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	t.Cleanup(func() {
 		_, err = db.Exec("DELETE FROM users WHERE username=$1", input.Username)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 	})
 
 	return userID, id, input
 }
 
-func TestUserCreate(t *testing.T) { //nolint:funlen
+func TestUserCreate(t *testing.T) {
 	t.Parallel()
 
 	db := createTempDB(t, "role_get")
@@ -88,83 +163,7 @@ func TestUserCreate(t *testing.T) { //nolint:funlen
 	t.Run("InvalidInputs", func(t *testing.T) {
 		t.Parallel()
 
-		tests := []struct {
-			name  string
-			input model.UserPartial
-		}{
-			{"EmptyName", model.UserPartial{
-				Name:     "",
-				Username: gofakeit.Username(),
-				Email:    gofakeit.Email(),
-				Password: gofakeit.Password(true, true, true, true, true, 20),
-				Roles:    []string{},
-			}},
-			{"EmptyUsername", model.UserPartial{
-				Name:     gofakeit.Name(),
-				Username: "",
-				Email:    gofakeit.Email(),
-				Password: gofakeit.Password(true, true, true, true, true, 20),
-				Roles:    []string{},
-			}},
-			{"EmptyEmail", model.UserPartial{
-				Name:     gofakeit.Name(),
-				Username: gofakeit.Username(),
-				Email:    "",
-				Password: gofakeit.Password(true, true, true, true, true, 20),
-				Roles:    []string{},
-			}},
-			{"EmptyPassword", model.UserPartial{
-				Name:     gofakeit.Name(),
-				Username: gofakeit.Username(),
-				Email:    gofakeit.Email(),
-				Password: "",
-				Roles:    []string{},
-			}},
-			{"LongName", model.UserPartial{
-				Name:     gofakeit.LetterN(256),
-				Username: gofakeit.Username(),
-				Email:    gofakeit.Email(),
-				Password: gofakeit.Password(true, true, true, true, true, 20),
-				Roles:    []string{},
-			}},
-			{"LongUsername", model.UserPartial{
-				Name:     gofakeit.Name(),
-				Username: gofakeit.LetterN(256),
-				Email:    gofakeit.Email(),
-				Password: gofakeit.Password(true, true, true, true, true, 20),
-				Roles:    []string{},
-			}},
-			{"LongEmail", model.UserPartial{
-				Name:     gofakeit.Name(),
-				Username: gofakeit.Username(),
-				Email:    gofakeit.LetterN(256) + gofakeit.Email(),
-				Password: gofakeit.Password(true, true, true, true, true, 20),
-				Roles:    []string{},
-			}},
-			{"LongPassword", model.UserPartial{
-				Name:     gofakeit.Name(),
-				Username: gofakeit.Username(),
-				Email:    gofakeit.Email(),
-				Password: gofakeit.Password(true, true, true, true, true, 300),
-				Roles:    []string{},
-			}},
-			{"InvalidUsername", model.UserPartial{
-				Name:     gofakeit.Name(),
-				Username: gofakeit.Username() + "%$#¨",
-				Email:    gofakeit.Email(),
-				Password: gofakeit.Password(true, true, true, true, true, 20),
-				Roles:    []string{},
-			}},
-			{"InvalidEmail", model.UserPartial{
-				Name:     gofakeit.Name(),
-				Username: gofakeit.Username(),
-				Email:    gofakeit.LetterN(25),
-				Password: gofakeit.Password(true, true, true, true, true, 20),
-				Roles:    []string{},
-			}},
-		}
-
-		for _, test := range tests {
+		for _, test := range invalidUserPartialInputs {
 			test := test
 
 			t.Run(test.name, func(t *testing.T) {
@@ -235,7 +234,7 @@ func assertUser(t *testing.T, partial partialUser, userdb model.User) {
 	assert.Equal(t, model.ID{}, userdb.DeletedBy)
 
 	match, _, err := argon2id.CheckHash(partial.input.Password, userdb.Password)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.True(t, match)
 }
 
@@ -250,11 +249,20 @@ func TestUserGet(t *testing.T) {
 	qtRoles := 10
 	roles := make([]string, qtRoles)
 	rolesSum := make(map[string]int, qtRoles)
+	multiplesRolesSum := map[string]map[string]int{}
 
 	for i := range roles {
 		_, role := createTempRole(t, role, db)
 		roles[i] = role.Name
-		rolesSum[role.Name] = 0
+	}
+
+	multiplesRolesSum[roles[0]] = map[string]int{}
+	multiplesRolesSum[roles[5]] = map[string]int{}
+
+	for _, role := range roles {
+		rolesSum[role] = 0
+		multiplesRolesSum[roles[0]][role] = 0
+		multiplesRolesSum[roles[5]][role] = 0
 	}
 
 	qtUsers := 100
@@ -271,6 +279,18 @@ func TestUserGet(t *testing.T) {
 		for _, role := range user.Roles {
 			rolesSum[role]++
 		}
+
+		if slices.Contains(user.Roles, roles[0]) {
+			for _, role := range user.Roles {
+				multiplesRolesSum[roles[0]][role]++
+			}
+		}
+
+		if slices.Contains(user.Roles, roles[5]) {
+			for _, role := range user.Roles {
+				multiplesRolesSum[roles[5]][role]++
+			}
+		}
 	}
 
 	for _, userTemp := range users {
@@ -280,7 +300,7 @@ func TestUserGet(t *testing.T) {
 			t.Parallel()
 
 			userdb, err := user.GetByID(userTemp.userID)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			assertUser(t, userTemp, *userdb)
 		})
@@ -297,7 +317,7 @@ func TestUserGet(t *testing.T) {
 		t.Parallel()
 
 		usersdb, err := user.GetAll(0, qtUsers)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		assert.Equal(t, qtUsers, len(usersdb))
 
@@ -310,29 +330,17 @@ func TestUserGet(t *testing.T) {
 		}
 	})
 
-	for _, role := range roles {
+	for role, sum := range rolesSum {
 		role := role
+		sum := sum
 
 		t.Run("GetByRole", func(t *testing.T) {
 			t.Parallel()
 
 			usersdb, err := user.GetByRole([]string{role}, 0, qtUsers)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
-			assert.Equal(t, rolesSum[role], len(usersdb))
-
-			ids := make([]model.ID, 0, len(usersdb))
-			for _, user := range usersdb {
-				ids = append(ids, user.ID)
-			}
-
-			for _, user := range users {
-				if slices.Contains(user.input.Roles, role) {
-					if !slices.Contains(ids, user.userID) {
-						log.Println(user)
-					}
-				}
-			}
+			assert.Equal(t, sum, len(usersdb))
 
 			for _, userdb := range usersdb {
 				index := slices.IndexFunc(users, func(p partialUser) bool {
@@ -343,20 +351,42 @@ func TestUserGet(t *testing.T) {
 		})
 	}
 
-	t.Run("GetByRole/All", func(t *testing.T) {
+	t.Run("GetByRole/Multiples", func(t *testing.T) {
 		t.Parallel()
 
-		usersdb, err := user.GetAll(0, qtUsers)
-		assert.Nil(t, err)
+		for role1, rolesSum := range multiplesRolesSum {
+			role1 := role1
+			rolesSum := rolesSum
 
-		assert.Equal(t, qtUsers, len(usersdb))
+			t.Run(role1, func(t *testing.T) {
+				t.Parallel()
 
-		for _, userdb := range usersdb {
-			index := slices.IndexFunc(users, func(p partialUser) bool {
-				return p.userID == userdb.ID
+				for role2, sum := range rolesSum {
+					role2 := role2
+					sum := sum
+
+					t.Run(role2, func(t *testing.T) {
+						usersdb, err := user.GetByRole([]string{role1, role2}, 0, qtUsers)
+						assert.NoError(t, err)
+
+						assert.Equal(t, sum, len(usersdb))
+
+						for _, userdb := range usersdb {
+							index := slices.IndexFunc(users, func(p partialUser) bool {
+								return p.userID == userdb.ID
+							})
+							assertUser(t, users[index], userdb)
+						}
+					})
+				}
 			})
-
-			assertUser(t, users[index], userdb)
 		}
+	})
+
+	t.Run("GetByRole/RoleNotFound", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := user.GetByRole([]string{gofakeit.Name()}, 0, qtUsers)
+		assert.ErrorIs(t, err, errs.ErrRoleNotFound)
 	})
 }

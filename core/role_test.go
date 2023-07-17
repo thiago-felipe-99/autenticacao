@@ -2,6 +2,7 @@ package core_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/go-playground/validator/v10"
@@ -11,6 +12,7 @@ import (
 	"github.com/thiago-felipe-99/autenticacao/data"
 	"github.com/thiago-felipe-99/autenticacao/errs"
 	"github.com/thiago-felipe-99/autenticacao/model"
+	"golang.org/x/exp/slices"
 )
 
 func createTempRole(t *testing.T, role *core.Role, db *sqlx.DB) (model.ID, model.RolePartial) {
@@ -89,5 +91,51 @@ func TestRoleCreate(t *testing.T) {
 			_, err = db.Exec("DELETE FROM role WHERE name=$1", input.Name)
 			assert.Nil(t, err)
 		})
+	})
+}
+
+func TestRoleGet(t *testing.T) {
+	t.Parallel()
+
+	db := createTempDB(t, "role_get")
+	role := core.NewRole(data.NewRoleSQL(db), validator.New())
+	qtRoles := 100
+	roles := make([]string, qtRoles)
+
+	for i := range roles {
+		_, role := createTempRole(t, role, db)
+		roles[i] = role.Name
+	}
+
+	for _, roleName := range roles {
+		roleName := roleName
+
+		t.Run("Get/"+roleName, func(t *testing.T) {
+			t.Parallel()
+
+			roledb, err := role.GetByName(roleName)
+			assert.Nil(t, err)
+
+			assert.Equal(t, roleName, roledb.Name)
+			assert.LessOrEqual(t, time.Since(roledb.CreatedAt), time.Second)
+			assert.True(t, time.Time{}.Equal(roledb.DeletedAt))
+			assert.Equal(t, model.ID{}, roledb.DeletedBy)
+		})
+	}
+
+	t.Run("GetAll", func(t *testing.T) {
+		t.Parallel()
+
+		rolesdb, err := role.GetAll(0, qtRoles)
+		assert.Nil(t, err)
+
+		assert.Equal(t, qtRoles, len(rolesdb))
+
+		for _, roledb := range rolesdb {
+			assert.True(t, slices.Contains(roles, roledb.Name))
+			assert.LessOrEqual(t, time.Since(roledb.CreatedAt), time.Second)
+			assert.True(t, time.Time{}.Equal(roledb.DeletedAt))
+			assert.Equal(t, model.ID{}, roledb.DeletedBy)
+		}
 	})
 }

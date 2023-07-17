@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"
-	"github.com/thiago-felipe-99/autenticacao/errs"
 )
 
 type ID uuid.UUID
@@ -21,12 +20,12 @@ func (id ID) Value() (driver.Value, error) {
 }
 
 func (id *ID) Scan(value any) error {
-	idString, okay := value.([]uint8)
-	if !okay {
-		return errs.ErrInvalidID
+	newID, err := ParseID(fmt.Sprintf("%s", value))
+	if err != nil {
+		return err
 	}
 
-	*id = ID(idString)
+	*id = newID
 
 	return nil
 }

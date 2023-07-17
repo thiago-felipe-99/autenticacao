@@ -16,10 +16,10 @@ type RoleSQL struct {
 }
 
 func (r *RoleSQL) GetByName(name string) (*model.Role, error) {
-	role := &model.Role{} //nolint: exhaustruct
+	role := model.Role{} //nolint: exhaustruct
 
 	err := r.db.Get(
-		role,
+		&role,
 		`SELECT 
 			name, created_at, created_by, deleted_at, deleted_by 
 		FROM 
@@ -36,14 +36,14 @@ func (r *RoleSQL) GetByName(name string) (*model.Role, error) {
 		return nil, fmt.Errorf("error get role by name in database: %w", err)
 	}
 
-	return role, nil
+	return &role, nil
 }
 
 func (r *RoleSQL) GetAll(paginate int, qt int) ([]model.Role, error) {
 	role := []model.Role{}
 
 	err := r.db.Select(
-		role,
+		&role,
 		`SELECT 
 			name, created_at, created_by, deleted_at, deleted_by 
 		FROM 
@@ -58,7 +58,7 @@ func (r *RoleSQL) GetAll(paginate int, qt int) ([]model.Role, error) {
 			return nil, errs.ErrRoleNotFoud
 		}
 
-		return nil, fmt.Errorf("error get role by name in database: %w", err)
+		return nil, fmt.Errorf("error get roles in database: %w", err)
 	}
 
 	return role, nil

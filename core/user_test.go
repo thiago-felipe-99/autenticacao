@@ -116,10 +116,6 @@ var validUserUpdateInputs = []struct {
 	{"OnlyName", model.UserUpdate{Name: gofakeit.Name()}},
 	{"OnlyUsername", model.UserUpdate{Username: gofakeit.Username()}},
 	{"OnlyEmail", model.UserUpdate{Email: gofakeit.Email()}},
-	{
-		"OnlyPassword",
-		model.UserUpdate{Password: gofakeit.Password(true, true, true, true, true, 20)},
-	},
 	{"OnlyIsActive", model.UserUpdate{IsActive: boolPointer(false)}},
 }
 
@@ -259,6 +255,7 @@ type partialUser struct {
 func assertUser(t *testing.T, partial partialUser, userdb model.User) {
 	t.Helper()
 
+	// não comparar senha pois demora muito, faça a comparação na mão e só para um objeto
 	assert.Equal(t, partial.userID, userdb.ID)
 	assert.Equal(t, partial.input.Name, userdb.Name)
 	assert.Equal(t, partial.input.Username, userdb.Username)
@@ -269,13 +266,9 @@ func assertUser(t *testing.T, partial partialUser, userdb model.User) {
 	assert.Equal(t, partial.createdBy, userdb.CreatedBy)
 	assert.True(t, time.Time{}.Equal(userdb.DeletedAt))
 	assert.Equal(t, model.ID{}, userdb.DeletedBy)
-
-	match, _, err := argon2id.CheckHash(partial.input.Password, userdb.Password)
-	assert.NoError(t, err)
-	assert.True(t, match)
 }
 
-func TestUserGet(t *testing.T) {
+func TestUserGet(t *testing.T) { //nolint:funlen
 	t.Parallel()
 
 	db := createTempDB(t, "role_get")
@@ -303,11 +296,11 @@ func TestUserGet(t *testing.T) {
 	}
 
 	qtUsers := 100
-	users := make([]partialUser, qtUsers)
+	usersTemp := make([]partialUser, qtUsers)
 
 	for i := 0; i < qtUsers; i++ {
 		userid, createdBy, user := createTempUser(t, user, db, roles)
-		users[i] = partialUser{
+		usersTemp[i] = partialUser{
 			userID:    userid,
 			input:     user,
 			createdBy: createdBy,
@@ -330,7 +323,21 @@ func TestUserGet(t *testing.T) {
 		}
 	}
 
-	for _, userTemp := range users {
+	t.Run("CheckPassword", func(t *testing.T) {
+		t.Parallel()
+		userTemp := usersTemp[0]
+
+		userdb, err := user.GetByID(userTemp.userID)
+		assert.NoError(t, err)
+
+		assertUser(t, userTemp, *userdb)
+
+		match, err := argon2id.ComparePasswordAndHash(userTemp.input.Password, userdb.Password)
+		assert.NoError(t, err)
+		assert.True(t, match)
+	})
+
+	for _, userTemp := range usersTemp {
 		userTemp := userTemp
 
 		t.Run("GetByID", func(t *testing.T) {
@@ -377,11 +384,11 @@ func TestUserGet(t *testing.T) {
 		assert.Equal(t, qtUsers, len(usersdb))
 
 		for _, userdb := range usersdb {
-			index := slices.IndexFunc(users, func(p partialUser) bool {
+			index := slices.IndexFunc(usersTemp, func(p partialUser) bool {
 				return p.userID == userdb.ID
 			})
 
-			assertUser(t, users[index], userdb)
+			assertUser(t, usersTemp[index], userdb)
 		}
 	})
 
@@ -398,10 +405,10 @@ func TestUserGet(t *testing.T) {
 			assert.Equal(t, sum, len(usersdb))
 
 			for _, userdb := range usersdb {
-				index := slices.IndexFunc(users, func(p partialUser) bool {
+				index := slices.IndexFunc(usersTemp, func(p partialUser) bool {
 					return p.userID == userdb.ID
 				})
-				assertUser(t, users[index], userdb)
+				assertUser(t, usersTemp[index], userdb)
 			}
 		})
 	}
@@ -427,10 +434,10 @@ func TestUserGet(t *testing.T) {
 						assert.Equal(t, sum, len(usersdb))
 
 						for _, userdb := range usersdb {
-							index := slices.IndexFunc(users, func(p partialUser) bool {
+							index := slices.IndexFunc(usersTemp, func(p partialUser) bool {
 								return p.userID == userdb.ID
 							})
-							assertUser(t, users[index], userdb)
+							assertUser(t, usersTemp[index], userdb)
 						}
 					})
 				}
@@ -449,7 +456,7 @@ func TestUserGet(t *testing.T) {
 func assertUserUpdate(
 	t *testing.T,
 	update model.UserUpdate,
-	userTmp model.UserPartial,
+	userTemp model.UserPartial,
 	userid model.ID,
 	user *core.User,
 ) {
@@ -458,42 +465,33 @@ func assertUserUpdate(
 	userdb, err := user.GetByID(userid)
 	assert.NoError(t, err)
 
+	// não comparar senha pois demora muito, faça a comparação na mão e só para um objeto
 	if update.Name != "" {
 		assert.Equal(t, update.Name, userdb.Name)
 	} else {
-		assert.Equal(t, userTmp.Name, userdb.Name)
+		assert.Equal(t, userTemp.Name, userdb.Name)
 	}
 
 	if update.Username != "" {
 		assert.Equal(t, update.Username, userdb.Username)
 	} else {
-		assert.Equal(t, userTmp.Username, userdb.Username)
+		assert.Equal(t, userTemp.Username, userdb.Username)
 	}
 
 	if update.Email != "" {
 		assert.Equal(t, update.Email, userdb.Email)
 	} else {
-		assert.Equal(t, userTmp.Email, userdb.Email)
+		assert.Equal(t, userTemp.Email, userdb.Email)
 	}
 
 	if update.Roles != nil {
 		assert.Equal(t, update.Roles, userdb.Roles)
 	} else {
-		assert.Equal(t, userTmp.Roles, userdb.Roles)
+		assert.Equal(t, userTemp.Roles, userdb.Roles)
 	}
 
 	if update.IsActive != nil {
 		assert.Equal(t, *update.IsActive, userdb.IsActive)
-	}
-
-	if update.Password != "" {
-		match, _, err := argon2id.CheckHash(update.Password, userdb.Password)
-		assert.NoError(t, err)
-		assert.True(t, match)
-	} else {
-		match, _, err := argon2id.CheckHash(userTmp.Password, userdb.Password)
-		assert.NoError(t, err)
-		assert.True(t, match)
 	}
 }
 
@@ -522,12 +520,12 @@ func TestUserUpdate(t *testing.T) {
 			t.Run(test.name, func(t *testing.T) {
 				t.Parallel()
 
-				userid, _, userTmp := createTempUser(t, user, db, roles)
+				userid, _, userTemp := createTempUser(t, user, db, roles)
 
 				err := user.Update(userid, test.input)
 				assert.NoError(t, err)
 
-				assertUserUpdate(t, test.input, userTmp, userid, user)
+				assertUserUpdate(t, test.input, userTemp, userid, user)
 			})
 		}
 	})
@@ -535,20 +533,42 @@ func TestUserUpdate(t *testing.T) {
 	t.Run("ValidInputs/OnlyRole", func(t *testing.T) {
 		t.Parallel()
 
-		userid, _, userTmp := createTempUser(t, user, db, roles)
+		userid, _, userTemp := createTempUser(t, user, db, roles)
 
 		update := model.UserUpdate{Roles: randomSliceString(roles)} //nolint:exhaustruct
 
 		err := user.Update(userid, update)
 		assert.NoError(t, err)
 
-		assertUserUpdate(t, update, userTmp, userid, user)
+		assertUserUpdate(t, update, userTemp, userid, user)
+	})
+
+	t.Run("ValidInputs/OnlyPassword", func(t *testing.T) {
+		t.Parallel()
+
+		userid, _, userTemp := createTempUser(t, user, db, roles)
+
+		update := model.UserUpdate{ //nolint:exhaustruct
+			Password: gofakeit.Password(true, true, true, true, true, 20),
+		}
+
+		err := user.Update(userid, update)
+		assert.NoError(t, err)
+
+		assertUserUpdate(t, update, userTemp, userid, user)
+
+		userdb, err := user.GetByID(userid)
+		assert.NoError(t, err)
+
+		match, err := argon2id.ComparePasswordAndHash(update.Password, userdb.Password)
+		assert.NoError(t, err)
+		assert.True(t, match)
 	})
 
 	t.Run("ValidInputs/All", func(t *testing.T) {
 		t.Parallel()
 
-		userid, _, userTmp := createTempUser(t, user, db, roles)
+		userid, _, userTemp := createTempUser(t, user, db, roles)
 
 		update := model.UserUpdate{
 			Name:     gofakeit.Name(),
@@ -562,7 +582,14 @@ func TestUserUpdate(t *testing.T) {
 		err := user.Update(userid, update)
 		assert.NoError(t, err)
 
-		assertUserUpdate(t, update, userTmp, userid, user)
+		assertUserUpdate(t, update, userTemp, userid, user)
+
+		userdb, err := user.GetByID(userid)
+		assert.NoError(t, err)
+
+		match, err := argon2id.ComparePasswordAndHash(update.Password, userdb.Password)
+		assert.NoError(t, err)
+		assert.True(t, match)
 	})
 
 	t.Run("InvalidInputs", func(t *testing.T) {
@@ -601,16 +628,16 @@ func TestUserUpdate(t *testing.T) {
 		t.Parallel()
 
 		id1, _, _ := createTempUser(t, user, db, roles)
-		_, _, userTmp2 := createTempUser(t, user, db, roles)
+		_, _, userTemp2 := createTempUser(t, user, db, roles)
 
 		t.Run("Username", func(t *testing.T) {
-			input := model.UserUpdate{Username: userTmp2.Username} //nolint:exhaustruct
+			input := model.UserUpdate{Username: userTemp2.Username} //nolint:exhaustruct
 			err := user.Update(id1, input)
 			assert.ErrorIs(t, err, errs.ErrUsernameAlreadyExist)
 		})
 
 		t.Run("Email", func(t *testing.T) {
-			input := model.UserUpdate{Email: userTmp2.Email} //nolint:exhaustruct
+			input := model.UserUpdate{Email: userTemp2.Email} //nolint:exhaustruct
 			err := user.Update(id1, input)
 			assert.ErrorIs(t, err, errs.ErrEmailAlreadyExist)
 		})
@@ -627,6 +654,7 @@ type deleteUser struct {
 func assertUserDelete(t *testing.T, partial deleteUser, userdb model.User) {
 	t.Helper()
 
+	// não comparar senha pois demora muito, faça a comparação na mão e só para um objeto
 	assert.Equal(t, partial.userID, userdb.ID)
 	assert.Equal(t, partial.input.Name, userdb.Name)
 	assert.Equal(t, partial.input.Username, userdb.Username)
@@ -637,13 +665,9 @@ func assertUserDelete(t *testing.T, partial deleteUser, userdb model.User) {
 	assert.Equal(t, partial.createdBy, userdb.CreatedBy)
 	assert.LessOrEqual(t, time.Since(userdb.DeletedAt), time.Minute)
 	assert.Equal(t, partial.deletedBy, userdb.DeletedBy)
-
-	match, _, err := argon2id.CheckHash(partial.input.Password, userdb.Password)
-	assert.NoError(t, err)
-	assert.True(t, match)
 }
 
-func TestUserDelete(t *testing.T) {
+func TestUserDelete(t *testing.T) { //nolint:funlen
 	t.Parallel()
 
 	db := createTempDB(t, "role_get")
@@ -674,7 +698,7 @@ func TestUserDelete(t *testing.T) {
 	users := make([]deleteUser, qtUsers)
 
 	for i := 0; i < qtUsers; i++ {
-		userid, createdby, userTmp := createTempUser(t, user, db, roles)
+		userid, createdby, userTemp := createTempUser(t, user, db, roles)
 
 		deletedby := model.NewID()
 
@@ -683,23 +707,23 @@ func TestUserDelete(t *testing.T) {
 
 		users[i] = deleteUser{
 			userID:    userid,
-			input:     userTmp,
+			input:     userTemp,
 			createdBy: createdby,
 			deletedBy: deletedby,
 		}
 
-		for _, role := range userTmp.Roles {
+		for _, role := range userTemp.Roles {
 			rolesSum[role]++
 		}
 
-		if slices.Contains(userTmp.Roles, roles[0]) {
-			for _, role := range userTmp.Roles {
+		if slices.Contains(userTemp.Roles, roles[0]) {
+			for _, role := range userTemp.Roles {
 				multiplesRolesSum[roles[0]][role]++
 			}
 		}
 
-		if slices.Contains(userTmp.Roles, roles[5]) {
-			for _, role := range userTmp.Roles {
+		if slices.Contains(userTemp.Roles, roles[5]) {
+			for _, role := range userTemp.Roles {
 				multiplesRolesSum[roles[5]][role]++
 			}
 		}
@@ -718,7 +742,7 @@ func TestUserDelete(t *testing.T) {
 		t.Run("GetByUsername", func(t *testing.T) {
 			t.Parallel()
 
-			_, err := user.GetByEmail(userTemp.input.Username)
+			_, err := user.GetByUsername(userTemp.input.Username)
 			assert.ErrorIs(t, err, errs.ErrUserNotFoud)
 		})
 

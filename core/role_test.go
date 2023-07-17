@@ -39,6 +39,12 @@ func TestRoleCreate(t *testing.T) {
 	db := createTempDB(t, "role_create")
 	role := core.NewRole(data.NewRoleSQL(db), validator.New())
 
+	t.Run("ValidInputs", func(t *testing.T) {
+		t.Parallel()
+
+		createTempRole(t, role, db)
+	})
+
 	t.Run("InvalidInputs", func(t *testing.T) {
 		t.Parallel()
 
@@ -71,12 +77,6 @@ func TestRoleCreate(t *testing.T) {
 
 		err := role.Create(id, input)
 		assert.ErrorIs(t, err, errs.ErrRoleAlreadyExist)
-	})
-
-	t.Run("ValidInputs", func(t *testing.T) {
-		t.Parallel()
-
-		createTempRole(t, role, db)
 	})
 
 	t.Run("DuplicateCreatedBy", func(t *testing.T) {

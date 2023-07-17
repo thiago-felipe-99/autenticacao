@@ -13,13 +13,13 @@ import (
 )
 
 type User struct {
-	database  data.User
-	role      *Role
-	validator *validator.Validate
-	argon2id  argon2id.Params
+	database data.User
+	role     *Role
+	validate *validator.Validate
+	argon2id argon2id.Params
 }
 
-func (u *User) validateRoles(roles []string) (bool, error) {
+func (u *User) rolesExists(roles []string) (bool, error) {
 	for _, role := range roles {
 		_, err := u.role.GetByName(role)
 		if err != nil {
@@ -100,18 +100,18 @@ func (u *User) GetByRole(roles []string, paginate int, qt int) ([]model.User, er
 }
 
 func (u *User) Create(createdBy model.ID, partial model.UserPartial) error {
-	err := validate(u.validator, partial)
+	err := validate(u.validate, partial)
 	if err != nil {
 		return err
 	}
 
-	valid, err := u.validateRoles(partial.Roles)
+	valid, err := u.rolesExists(partial.Roles)
 	if err != nil {
 		return err
 	}
 
 	if !valid {
-		return errs.ErrInvalidRoles
+		return errs.ErrRoleNotFound
 	}
 
 	_, err = u.GetByUsername(partial.Username)
@@ -160,18 +160,18 @@ func (u *User) Create(createdBy model.ID, partial model.UserPartial) error {
 }
 
 func (u *User) Update(userID model.ID, partial model.UserUpdate) error {
-	err := validate(u.validator, partial)
+	err := validate(u.validate, partial)
 	if err != nil {
 		return err
 	}
 
-	valid, err := u.validateRoles(partial.Roles)
+	valid, err := u.rolesExists(partial.Roles)
 	if err != nil {
 		return err
 	}
 
 	if !valid {
-		return errs.ErrInvalidRoles
+		return errs.ErrRoleNotFound
 	}
 
 	user, err := u.GetByID(userID)
@@ -242,4 +242,13 @@ func (u *User) Delete(userID model.ID, deleteByID model.ID) error {
 	}
 
 	return nil
+}
+
+func NewUser(database data.User, role *Role, validate *validator.Validate) *User {
+	return &User{
+		database: database,
+		role:     role,
+		validate: validate,
+		argon2id: *argon2id.DefaultParams,
+	}
 }

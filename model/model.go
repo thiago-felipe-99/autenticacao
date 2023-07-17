@@ -59,7 +59,7 @@ type UserPartial struct {
 	Name     string   `config:"name"     json:"name"     validate:"required,max=255"`
 	Username string   `config:"username" json:"username" validate:"required,alphanumunicode,max=255"`
 	Email    string   `config:"email"    json:"email"    validate:"required,email,max=255"`
-	Password string   `config:"password" json:"password" validate:"required"`
+	Password string   `config:"password" json:"password" validate:"required,max=256"`
 	Roles    []string `                  json:"roles"    validate:"omitempty"`
 }
 

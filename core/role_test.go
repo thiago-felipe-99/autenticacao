@@ -101,23 +101,23 @@ func TestRoleGet(t *testing.T) {
 	db := createTempDB(t, "role_get")
 	role := core.NewRole(data.NewRoleSQL(db), validator.New())
 	qtRoles := 100
-	roles := make([]string, qtRoles)
+	rolesTmp := make([]string, qtRoles)
 
-	for i := range roles {
+	for i := range rolesTmp {
 		_, role := createTempRole(t, role, db)
-		roles[i] = role.Name
+		rolesTmp[i] = role.Name
 	}
 
-	for _, roleName := range roles {
-		roleName := roleName
+	for _, roleTmp := range rolesTmp {
+		roleTmp := roleTmp
 
-		t.Run("Get/"+roleName, func(t *testing.T) {
+		t.Run("Get", func(t *testing.T) {
 			t.Parallel()
 
-			roledb, err := role.GetByName(roleName)
+			roledb, err := role.GetByName(roleTmp)
 			assert.Nil(t, err)
 
-			assert.Equal(t, roleName, roledb.Name)
+			assert.Equal(t, roleTmp, roledb.Name)
 			assert.LessOrEqual(t, time.Since(roledb.CreatedAt), time.Second)
 			assert.True(t, time.Time{}.Equal(roledb.DeletedAt))
 			assert.Equal(t, model.ID{}, roledb.DeletedBy)
@@ -133,7 +133,7 @@ func TestRoleGet(t *testing.T) {
 		assert.Equal(t, qtRoles, len(rolesdb))
 
 		for _, roledb := range rolesdb {
-			assert.True(t, slices.Contains(roles, roledb.Name))
+			assert.True(t, slices.Contains(rolesTmp, roledb.Name))
 			assert.LessOrEqual(t, time.Since(roledb.CreatedAt), time.Second)
 			assert.True(t, time.Time{}.Equal(roledb.DeletedAt))
 			assert.Equal(t, model.ID{}, roledb.DeletedBy)
@@ -155,34 +155,28 @@ func TestRoleDelete(t *testing.T) {
 	db := createTempDB(t, "role_get")
 	role := core.NewRole(data.NewRoleSQL(db), validator.New())
 	qtRoles := 100
-	rolesName := make([]string, qtRoles)
+	rolesTmp := make([]string, qtRoles)
 	rolesID := make([]model.ID, qtRoles)
 
-	for i := range rolesName {
+	for i := range rolesTmp {
 		_, roleTemp := createTempRole(t, role, db)
 
 		id := model.NewID()
 		rolesID[i] = id
-		rolesName[i] = roleTemp.Name
+		rolesTmp[i] = roleTemp.Name
 
 		err := role.Delete(id, roleTemp.Name)
 		assert.Nil(t, err)
 	}
 
-	for i, roleName := range rolesName {
-		roleName := roleName
-		i := i
+	for _, roleTmp := range rolesTmp {
+		roleTmp := roleTmp
 
-		t.Run("Get/"+roleName, func(t *testing.T) {
+		t.Run("GetByName", func(t *testing.T) {
 			t.Parallel()
 
-			roledb, err := role.GetByName(roleName)
-			assert.Nil(t, err)
-
-			assert.Equal(t, roleName, roledb.Name)
-			assert.LessOrEqual(t, time.Since(roledb.CreatedAt), time.Second)
-			assert.LessOrEqual(t, time.Since(roledb.DeletedAt), time.Second)
-			assert.Equal(t, rolesID[i], roledb.DeletedBy)
+			_, err := role.GetByName(roleTmp)
+			assert.ErrorIs(t, err, errs.ErrRoleNotFound)
 		})
 	}
 
@@ -195,7 +189,7 @@ func TestRoleDelete(t *testing.T) {
 		assert.Equal(t, qtRoles, len(rolesdb))
 
 		for _, roledb := range rolesdb {
-			assert.True(t, slices.Contains(rolesName, roledb.Name))
+			assert.True(t, slices.Contains(rolesTmp, roledb.Name))
 			assert.LessOrEqual(t, time.Since(roledb.CreatedAt), time.Second)
 			assert.LessOrEqual(t, time.Since(roledb.DeletedAt), time.Second)
 			assert.True(t, slices.Contains(rolesID, roledb.DeletedBy))

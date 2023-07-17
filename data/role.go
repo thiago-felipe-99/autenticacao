@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"github.com/thiago-felipe-99/autenticacao/errs"
 	"github.com/thiago-felipe-99/autenticacao/model"
 )
@@ -20,12 +21,10 @@ func (r *RoleSQL) GetByName(name string) (*model.Role, error) {
 
 	err := r.db.Get(
 		&role,
-		`SELECT 
-			name, created_at, created_by, deleted_at, deleted_by 
-		FROM 
-			role 
-		WHERE 
-		name=$1`,
+		`SELECT name, created_at, created_by, deleted_at, deleted_by 
+		FROM role 
+		WHERE deleted_at = $1 AND name=$2`,
+		time.Time{},
 		name,
 	)
 	if err != nil {
@@ -44,10 +43,8 @@ func (r *RoleSQL) GetAll(paginate int, qt int) ([]model.Role, error) {
 
 	err := r.db.Select(
 		&role,
-		`SELECT 
-			name, created_at, created_by, deleted_at, deleted_by 
-		FROM 
-			role 
+		`SELECT name, created_at, created_by, deleted_at, deleted_by 
+		FROM role 
 		LIMIT $1 
 		OFFSET $2`,
 		qt,
@@ -60,12 +57,27 @@ func (r *RoleSQL) GetAll(paginate int, qt int) ([]model.Role, error) {
 	return role, nil
 }
 
+func (r *RoleSQL) Exist(roles []string) (bool, error) {
+	count := 0
+
+	err := r.db.Get(
+		&count,
+		`SELECT COUNT(i) FROM unnest($1::text[]) i
+		LEFT JOIN role r ON i = r.name
+		WHERE r.name IS NULL;`,
+		pq.StringArray(roles),
+	)
+	if err != nil {
+		return false, fmt.Errorf("error verifying if roles exist: %w", err)
+	}
+
+	return count == 0, nil
+}
+
 func (r *RoleSQL) Create(role model.Role) error {
 	_, err := r.db.NamedExec(
-		`INSERT INTO role 
-			(name, created_at, created_by, deleted_at, deleted_by)
-		VALUES 
-			(:name, :created_at, :created_by, :deleted_at, :deleted_by)`,
+		`INSERT INTO role (name, created_at, created_by, deleted_at, deleted_by)
+		VALUES (:name, :created_at, :created_by, :deleted_at, :deleted_by)`,
 		role,
 	)
 	if err != nil {

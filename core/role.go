@@ -38,6 +38,15 @@ func (r *Role) GetAll(paginate int, qt int) ([]model.Role, error) {
 	return roles, nil
 }
 
+func (r *Role) Exist(roles []string) (bool, error) {
+	exist, err := r.database.Exist(roles)
+	if err != nil {
+		return false, fmt.Errorf("error verifying if roles exist: %w", err)
+	}
+
+	return exist, nil
+}
+
 func (r *Role) Create(createdBy model.ID, partial model.RolePartial) error {
 	err := validate(r.validate, partial)
 	if err != nil {

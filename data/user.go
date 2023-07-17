@@ -17,17 +17,14 @@ type UserSQL struct {
 }
 
 func (u *UserSQL) GetByID(id model.ID) (*model.User, error) {
-	user := &model.UserPostgres{} //nolint: exhaustruct
+	user := model.UserPostgres{} //nolint: exhaustruct
 
 	err := u.db.Get(
-		user,
+		&user,
 		`SELECT 
 			id, name, username, email, password, roles, is_active, created_at, created_by, deleted_at, deleted_by
-		FROM 
-			users
-		WHERE 
-			deleted_at = $1 AND
-			id = $2`,
+		FROM users
+		WHERE deleted_at = $1 AND id = $2`,
 		time.Time{},
 		id,
 	)
@@ -43,17 +40,14 @@ func (u *UserSQL) GetByID(id model.ID) (*model.User, error) {
 }
 
 func (u *UserSQL) GetByUsername(username string) (*model.User, error) {
-	user := &model.UserPostgres{} //nolint: exhaustruct
+	user := model.UserPostgres{} //nolint: exhaustruct
 
 	err := u.db.Get(
-		user,
+		&user,
 		`SELECT 
 			id, name, username, email, password, roles, is_active, created_at, created_by, deleted_at, deleted_by
-		FROM 
-			users
-		WHERE 
-			deleted_at = $1 AND
-			username = $2`,
+		FROM users
+		WHERE deleted_at = $1 AND username = $2`,
 		time.Time{},
 		username,
 	)
@@ -69,17 +63,14 @@ func (u *UserSQL) GetByUsername(username string) (*model.User, error) {
 }
 
 func (u *UserSQL) GetByEmail(email string) (*model.User, error) {
-	user := &model.UserPostgres{} //nolint: exhaustruct
+	user := model.UserPostgres{} //nolint: exhaustruct
 
 	err := u.db.Get(
-		user,
+		&user,
 		`SELECT 
 			id, name, username, email, password, roles, is_active, created_at, created_by, deleted_at, deleted_by
-		FROM 
-			users
-		WHERE 
-			deleted_at = $1 AND
-			email = $2`,
+		FROM users
+		WHERE deleted_at = $1 AND email = $2`,
 		time.Time{},
 		email,
 	)
@@ -98,11 +89,10 @@ func (u *UserSQL) GetAll(paginate int, qt int) ([]model.User, error) {
 	partial := []model.UserPostgres{}
 
 	err := u.db.Select(
-		partial,
+		&partial,
 		`SELECT 
 			id, name, username, email, password, roles, is_active, created_at, created_by, deleted_at, deleted_by
-		FROM 
-			users
+		FROM users
 		LIMIT $1 
 		OFFSET $2`,
 		qt,
@@ -128,13 +118,11 @@ func (u *UserSQL) GetByRoles(roles []string, paginate int, qt int) ([]model.User
 	partial := []model.UserPostgres{}
 
 	err := u.db.Select(
-		partial,
+		&partial,
 		`SELECT 
 			id, name, username, email, password, roles, is_active, created_at, created_by, deleted_at, deleted_by
-		FROM 
-			users
-		WHERE 
-			roles @> $1
+		FROM users
+		WHERE roles @> $1
 		LIMIT $2 
 		OFFSET $3`,
 		pq.StringArray(roles),
@@ -181,8 +169,7 @@ func (u *UserSQL) Update(user model.User) error {
 			password = :password, 
 			roles = :roles, 
 			is_active = :is_active
-		WHERE 
-			id = :id`,
+		WHERE id = :id`,
 		user.Postgres(),
 	)
 	if err != nil {

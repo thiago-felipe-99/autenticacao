@@ -10,6 +10,7 @@ import (
 	"github.com/thiago-felipe-99/autenticacao/data"
 	"github.com/thiago-felipe-99/autenticacao/errs"
 	"github.com/thiago-felipe-99/autenticacao/model"
+	"golang.org/x/exp/slices"
 )
 
 type User struct {
@@ -17,21 +18,6 @@ type User struct {
 	role     *Role
 	validate *validator.Validate
 	argon2id argon2id.Params
-}
-
-func (u *User) rolesExists(roles []string) (bool, error) {
-	for _, role := range roles {
-		_, err := u.role.GetByName(role)
-		if err != nil {
-			if errors.Is(err, errs.ErrRoleNotFound) {
-				return false, nil
-			}
-
-			return false, fmt.Errorf("error validating role: %w", err)
-		}
-	}
-
-	return true, nil
 }
 
 func (u *User) GetByID(id model.ID) (*model.User, error) {
@@ -76,10 +62,6 @@ func (u *User) GetByEmail(email string) (*model.User, error) {
 func (u *User) GetAll(paginate int, qt int) ([]model.User, error) {
 	users, err := u.database.GetAll(paginate, qt)
 	if err != nil {
-		if errors.Is(err, errs.ErrUserNotFoud) {
-			return []model.User{}, errs.ErrUserNotFoud
-		}
-
 		return nil, fmt.Errorf("error on getting user from database: %w", err)
 	}
 
@@ -87,54 +69,66 @@ func (u *User) GetAll(paginate int, qt int) ([]model.User, error) {
 }
 
 func (u *User) GetByRole(roles []string, paginate int, qt int) ([]model.User, error) {
+	exist, err := u.role.Exist(roles)
+	if err != nil {
+		return nil, err
+	}
+
+	if !exist {
+		return nil, errs.ErrRoleNotFound
+	}
+
 	users, err := u.database.GetByRoles(roles, paginate, qt)
 	if err != nil {
-		if errors.Is(err, errs.ErrUserNotFoud) {
-			return []model.User{}, errs.ErrUserNotFoud
-		}
-
 		return nil, fmt.Errorf("error on getting user from database: %w", err)
 	}
 
 	return users, nil
 }
 
-func (u *User) Create(createdBy model.ID, partial model.UserPartial) error {
+func (u *User) Create(createdBy model.ID, partial model.UserPartial) (model.ID, error) {
 	err := validate(u.validate, partial)
 	if err != nil {
-		return err
+		return model.ID{}, err
 	}
 
-	valid, err := u.rolesExists(partial.Roles)
+	exist, err := u.role.Exist(partial.Roles)
 	if err != nil {
-		return err
+		return model.ID{}, err
 	}
 
-	if !valid {
-		return errs.ErrRoleNotFound
+	if !exist {
+		return model.ID{}, errs.ErrRoleNotFound
 	}
 
 	_, err = u.GetByUsername(partial.Username)
 	if err != nil && !errors.Is(err, errs.ErrUserNotFoud) {
-		return err
+		return model.ID{}, err
 	}
 
 	if err == nil {
-		return errs.ErrUsernameAlreadyExist
+		return model.ID{}, errs.ErrUsernameAlreadyExist
 	}
 
 	_, err = u.GetByEmail(partial.Email)
 	if err != nil && !errors.Is(err, errs.ErrUserNotFoud) {
-		return err
+		return model.ID{}, err
 	}
 
 	if err == nil {
-		return errs.ErrEmailAlreadyExist
+		return model.ID{}, errs.ErrEmailAlreadyExist
 	}
 
 	hash, err := argon2id.CreateHash(partial.Password, &u.argon2id)
 	if err != nil {
-		return fmt.Errorf("error creating password hash: %w", err)
+		return model.ID{}, fmt.Errorf("error creating password hash: %w", err)
+	}
+
+	roles := make([]string, 0, len(partial.Roles))
+	for _, role := range partial.Roles {
+		if !slices.Contains(roles, role) {
+			roles = append(roles, role)
+		}
 	}
 
 	user := model.User{
@@ -153,10 +147,10 @@ func (u *User) Create(createdBy model.ID, partial model.UserPartial) error {
 
 	err = u.database.Create(user)
 	if err != nil {
-		return fmt.Errorf("error creating user in the database: %w", err)
+		return model.ID{}, fmt.Errorf("error creating user in the database: %w", err)
 	}
 
-	return nil
+	return user.ID, nil
 }
 
 func (u *User) Update(userID model.ID, partial model.UserUpdate) error {
@@ -165,12 +159,12 @@ func (u *User) Update(userID model.ID, partial model.UserUpdate) error {
 		return err
 	}
 
-	valid, err := u.rolesExists(partial.Roles)
+	exist, err := u.role.Exist(partial.Roles)
 	if err != nil {
 		return err
 	}
 
-	if !valid {
+	if !exist {
 		return errs.ErrRoleNotFound
 	}
 

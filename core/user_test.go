@@ -172,7 +172,7 @@ func createTempUser(
 func TestUserCreate(t *testing.T) {
 	t.Parallel()
 
-	db := createTempDB(t, "role_get")
+	db := createTempDB(t, "role_create")
 
 	role := core.NewRole(data.NewRoleSQL(db), validator.New())
 	user := core.NewUser(data.NewUserSQL(db), role, validator.New())
@@ -341,6 +341,24 @@ func TestUserGet(t *testing.T) {
 
 			assertUser(t, userTemp, *userdb)
 		})
+
+		t.Run("GetByUsername", func(t *testing.T) {
+			t.Parallel()
+
+			userdb, err := user.GetByUsername(userTemp.input.Username)
+			assert.NoError(t, err)
+
+			assertUser(t, userTemp, *userdb)
+		})
+
+		t.Run("GetByEmail", func(t *testing.T) {
+			t.Parallel()
+
+			userdb, err := user.GetByEmail(userTemp.input.Email)
+			assert.NoError(t, err)
+
+			assertUser(t, userTemp, *userdb)
+		})
 	}
 
 	t.Run("GetByID/NotFound", func(t *testing.T) {
@@ -482,7 +500,7 @@ func assertUserUpdate(
 func TestUserUpdate(t *testing.T) {
 	t.Parallel()
 
-	db := createTempDB(t, "role_get")
+	db := createTempDB(t, "role_update")
 
 	role := core.NewRole(data.NewRoleSQL(db), validator.New())
 	user := core.NewUser(data.NewUserSQL(db), role, validator.New())
@@ -596,5 +614,196 @@ func TestUserUpdate(t *testing.T) {
 			err := user.Update(id1, input)
 			assert.ErrorIs(t, err, errs.ErrEmailAlreadyExist)
 		})
+	})
+}
+
+type deleteUser struct {
+	userID    model.ID
+	input     model.UserPartial
+	createdBy model.ID
+	deletedBy model.ID
+}
+
+func assertUserDelete(t *testing.T, partial deleteUser, userdb model.User) {
+	t.Helper()
+
+	assert.Equal(t, partial.userID, userdb.ID)
+	assert.Equal(t, partial.input.Name, userdb.Name)
+	assert.Equal(t, partial.input.Username, userdb.Username)
+	assert.Equal(t, partial.input.Email, userdb.Email)
+	assert.Equal(t, partial.input.Roles, userdb.Roles)
+	assert.True(t, userdb.IsActive)
+	assert.LessOrEqual(t, time.Since(userdb.CreatedAt), time.Minute)
+	assert.Equal(t, partial.createdBy, userdb.CreatedBy)
+	assert.LessOrEqual(t, time.Since(userdb.DeletedAt), time.Minute)
+	assert.Equal(t, partial.deletedBy, userdb.DeletedBy)
+
+	match, _, err := argon2id.CheckHash(partial.input.Password, userdb.Password)
+	assert.NoError(t, err)
+	assert.True(t, match)
+}
+
+func TestUserDelete(t *testing.T) {
+	t.Parallel()
+
+	db := createTempDB(t, "role_get")
+
+	role := core.NewRole(data.NewRoleSQL(db), validator.New())
+	user := core.NewUser(data.NewUserSQL(db), role, validator.New())
+
+	qtRoles := 10
+	roles := make([]string, qtRoles)
+	rolesSum := make(map[string]int, qtRoles)
+	multiplesRolesSum := map[string]map[string]int{}
+
+	for i := range roles {
+		_, role := createTempRole(t, role, db)
+		roles[i] = role.Name
+	}
+
+	multiplesRolesSum[roles[0]] = map[string]int{}
+	multiplesRolesSum[roles[5]] = map[string]int{}
+
+	for _, role := range roles {
+		rolesSum[role] = 0
+		multiplesRolesSum[roles[0]][role] = 0
+		multiplesRolesSum[roles[5]][role] = 0
+	}
+
+	qtUsers := 100
+	users := make([]deleteUser, qtUsers)
+
+	for i := 0; i < qtUsers; i++ {
+		userid, createdby, userTmp := createTempUser(t, user, db, roles)
+
+		deletedby := model.NewID()
+
+		err := user.Delete(userid, deletedby)
+		assert.NoError(t, err)
+
+		users[i] = deleteUser{
+			userID:    userid,
+			input:     userTmp,
+			createdBy: createdby,
+			deletedBy: deletedby,
+		}
+
+		for _, role := range userTmp.Roles {
+			rolesSum[role]++
+		}
+
+		if slices.Contains(userTmp.Roles, roles[0]) {
+			for _, role := range userTmp.Roles {
+				multiplesRolesSum[roles[0]][role]++
+			}
+		}
+
+		if slices.Contains(userTmp.Roles, roles[5]) {
+			for _, role := range userTmp.Roles {
+				multiplesRolesSum[roles[5]][role]++
+			}
+		}
+	}
+
+	for _, userTemp := range users {
+		userTemp := userTemp
+
+		t.Run("GetByID", func(t *testing.T) {
+			t.Parallel()
+
+			_, err := user.GetByID(userTemp.userID)
+			assert.ErrorIs(t, err, errs.ErrUserNotFoud)
+		})
+
+		t.Run("GetByUsername", func(t *testing.T) {
+			t.Parallel()
+
+			_, err := user.GetByEmail(userTemp.input.Username)
+			assert.ErrorIs(t, err, errs.ErrUserNotFoud)
+		})
+
+		t.Run("GetByEmail", func(t *testing.T) {
+			t.Parallel()
+
+			_, err := user.GetByEmail(userTemp.input.Email)
+			assert.ErrorIs(t, err, errs.ErrUserNotFoud)
+		})
+	}
+
+	t.Run("GetAll", func(t *testing.T) {
+		t.Parallel()
+
+		usersdb, err := user.GetAll(0, qtUsers)
+		assert.NoError(t, err)
+
+		assert.Equal(t, qtUsers, len(usersdb))
+
+		for _, userdb := range usersdb {
+			index := slices.IndexFunc(users, func(p deleteUser) bool {
+				return p.userID == userdb.ID
+			})
+
+			assertUserDelete(t, users[index], userdb)
+		}
+	})
+
+	for role, sum := range rolesSum {
+		role := role
+		sum := sum
+
+		t.Run("GetByRole", func(t *testing.T) {
+			t.Parallel()
+
+			usersdb, err := user.GetByRole([]string{role}, 0, qtUsers)
+			assert.NoError(t, err)
+
+			assert.Equal(t, sum, len(usersdb))
+
+			for _, userdb := range usersdb {
+				index := slices.IndexFunc(users, func(p deleteUser) bool {
+					return p.userID == userdb.ID
+				})
+				assertUserDelete(t, users[index], userdb)
+			}
+		})
+	}
+
+	t.Run("GetByRole/Multiples", func(t *testing.T) {
+		t.Parallel()
+
+		for role1, rolesSum := range multiplesRolesSum {
+			role1 := role1
+			rolesSum := rolesSum
+
+			t.Run(role1, func(t *testing.T) {
+				t.Parallel()
+
+				for role2, sum := range rolesSum {
+					role2 := role2
+					sum := sum
+
+					t.Run(role2, func(t *testing.T) {
+						usersdb, err := user.GetByRole([]string{role1, role2}, 0, qtUsers)
+						assert.NoError(t, err)
+
+						assert.Equal(t, sum, len(usersdb))
+
+						for _, userdb := range usersdb {
+							index := slices.IndexFunc(users, func(p deleteUser) bool {
+								return p.userID == userdb.ID
+							})
+							assertUserDelete(t, users[index], userdb)
+						}
+					})
+				}
+			})
+		}
+	})
+
+	t.Run("UserNotFound", func(t *testing.T) {
+		t.Parallel()
+
+		err := user.Delete(model.NewID(), model.NewID())
+		assert.ErrorIs(t, err, errs.ErrUserNotFoud)
 	})
 }

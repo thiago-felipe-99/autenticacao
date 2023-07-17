@@ -407,7 +407,7 @@ func TestUserGet(t *testing.T) { //nolint:funlen
 		})
 	}
 
-	t.Run("GetByRole/Multiples", func(t *testing.T) {
+	t.Run("GetByRole/Multiples", func(t *testing.T) { //nolint:dupl
 		t.Parallel()
 
 		for role1, rolesSum := range multiplesRolesSum {
@@ -762,7 +762,7 @@ func TestUserDelete(t *testing.T) { //nolint:funlen
 		})
 	}
 
-	t.Run("GetByRole/Multiples", func(t *testing.T) {
+	t.Run("GetByRole/Multiples", func(t *testing.T) { //nolint:dupl
 		t.Parallel()
 
 		for role1, rolesSum := range multiplesRolesSum {

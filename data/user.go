@@ -13,13 +13,13 @@ import (
 )
 
 type UserSQL struct {
-	db *sqlx.DB
+	database *sqlx.DB
 }
 
 func (u *UserSQL) GetByID(id model.ID) (*model.User, error) {
 	user := model.UserPostgres{} //nolint: exhaustruct
 
-	err := u.db.Get(
+	err := u.database.Get(
 		&user,
 		`SELECT 
 			id, name, username, email, password, roles, is_active, created_at, created_by, deleted_at, deleted_by
@@ -42,7 +42,7 @@ func (u *UserSQL) GetByID(id model.ID) (*model.User, error) {
 func (u *UserSQL) GetByUsername(username string) (*model.User, error) {
 	user := model.UserPostgres{} //nolint: exhaustruct
 
-	err := u.db.Get(
+	err := u.database.Get(
 		&user,
 		`SELECT 
 			id, name, username, email, password, roles, is_active, created_at, created_by, deleted_at, deleted_by
@@ -65,7 +65,7 @@ func (u *UserSQL) GetByUsername(username string) (*model.User, error) {
 func (u *UserSQL) GetByEmail(email string) (*model.User, error) {
 	user := model.UserPostgres{} //nolint: exhaustruct
 
-	err := u.db.Get(
+	err := u.database.Get(
 		&user,
 		`SELECT 
 			id, name, username, email, password, roles, is_active, created_at, created_by, deleted_at, deleted_by
@@ -88,7 +88,7 @@ func (u *UserSQL) GetByEmail(email string) (*model.User, error) {
 func (u *UserSQL) GetAll(paginate int, qt int) ([]model.User, error) {
 	partial := []model.UserPostgres{}
 
-	err := u.db.Select(
+	err := u.database.Select(
 		&partial,
 		`SELECT 
 			id, name, username, email, password, roles, is_active, created_at, created_by, deleted_at, deleted_by
@@ -99,10 +99,6 @@ func (u *UserSQL) GetAll(paginate int, qt int) ([]model.User, error) {
 		qt*paginate,
 	)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errs.ErrUserNotFoud
-		}
-
 		return nil, fmt.Errorf("error get users in database: %w", err)
 	}
 
@@ -117,7 +113,7 @@ func (u *UserSQL) GetAll(paginate int, qt int) ([]model.User, error) {
 func (u *UserSQL) GetByRoles(roles []string, paginate int, qt int) ([]model.User, error) {
 	partial := []model.UserPostgres{}
 
-	err := u.db.Select(
+	err := u.database.Select(
 		&partial,
 		`SELECT 
 			id, name, username, email, password, roles, is_active, created_at, created_by, deleted_at, deleted_by
@@ -130,10 +126,6 @@ func (u *UserSQL) GetByRoles(roles []string, paginate int, qt int) ([]model.User
 		qt*paginate,
 	)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errs.ErrUserNotFoud
-		}
-
 		return nil, fmt.Errorf("error get users by role in database: %w", err)
 	}
 
@@ -146,7 +138,7 @@ func (u *UserSQL) GetByRoles(roles []string, paginate int, qt int) ([]model.User
 }
 
 func (u *UserSQL) Create(user model.User) error {
-	_, err := u.db.NamedExec(
+	_, err := u.database.NamedExec(
 		`INSERT INTO users
 			(id, name, username, email, password, roles, is_active, created_at, created_by, deleted_at, deleted_by)
 		VALUES 
@@ -161,7 +153,7 @@ func (u *UserSQL) Create(user model.User) error {
 }
 
 func (u *UserSQL) Update(user model.User) error {
-	_, err := u.db.NamedExec(
+	_, err := u.database.NamedExec(
 		`UPDATE users SET
 			name = :name, 
 			username = :username, 
@@ -180,7 +172,7 @@ func (u *UserSQL) Update(user model.User) error {
 }
 
 func (u *UserSQL) Delete(id model.ID, deletedAt time.Time, deletedBy model.ID) error {
-	_, err := u.db.Exec(
+	_, err := u.database.Exec(
 		"UPDATE users SET deleted_at=$1, deleted_by=$2 WHERE id=$3",
 		deletedAt,
 		deletedBy,
@@ -197,6 +189,6 @@ var _ User = &UserSQL{} //nolint: exhaustruct
 
 func NewUserSQL(db *sqlx.DB) *UserSQL {
 	return &UserSQL{
-		db: db,
+		database: db,
 	}
 }

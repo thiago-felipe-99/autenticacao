@@ -13,13 +13,13 @@ import (
 )
 
 type RoleSQL struct {
-	db *sqlx.DB
+	database *sqlx.DB
 }
 
 func (r *RoleSQL) GetByName(name string) (*model.Role, error) {
 	role := model.Role{} //nolint: exhaustruct
 
-	err := r.db.Get(
+	err := r.database.Get(
 		&role,
 		`SELECT name, created_at, created_by, deleted_at, deleted_by 
 		FROM role 
@@ -41,7 +41,7 @@ func (r *RoleSQL) GetByName(name string) (*model.Role, error) {
 func (r *RoleSQL) GetAll(paginate int, qt int) ([]model.Role, error) {
 	role := []model.Role{}
 
-	err := r.db.Select(
+	err := r.database.Select(
 		&role,
 		`SELECT name, created_at, created_by, deleted_at, deleted_by 
 		FROM role 
@@ -60,7 +60,7 @@ func (r *RoleSQL) GetAll(paginate int, qt int) ([]model.Role, error) {
 func (r *RoleSQL) Exist(roles []string) (bool, error) {
 	count := 0
 
-	err := r.db.Get(
+	err := r.database.Get(
 		&count,
 		`SELECT COUNT(i) FROM unnest($1::text[]) i
 		LEFT JOIN role r ON i = r.name
@@ -75,7 +75,7 @@ func (r *RoleSQL) Exist(roles []string) (bool, error) {
 }
 
 func (r *RoleSQL) Create(role model.Role) error {
-	_, err := r.db.NamedExec(
+	_, err := r.database.NamedExec(
 		`INSERT INTO role (name, created_at, created_by, deleted_at, deleted_by)
 		VALUES (:name, :created_at, :created_by, :deleted_at, :deleted_by)`,
 		role,
@@ -88,7 +88,7 @@ func (r *RoleSQL) Create(role model.Role) error {
 }
 
 func (r *RoleSQL) Delete(name string, deletedAt time.Time, deletedBy model.ID) (err error) {
-	tx, err := r.db.Begin()
+	tx, err := r.database.Begin()
 	if err != nil {
 		return fmt.Errorf("error beging transaction: %w", err)
 	}
@@ -129,6 +129,6 @@ var _ Role = &RoleSQL{} //nolint: exhaustruct
 
 func NewRoleSQL(db *sqlx.DB) *RoleSQL {
 	return &RoleSQL{
-		db: db,
+		database: db,
 	}
 }

@@ -142,6 +142,5 @@ type UserSession struct {
 	ID        ID        `json:"id"                  db:"id"`
 	UserID    ID        `json:"userId"              db:"userid"`
 	CreateaAt time.Time `json:"createdAt"           db:"created_at"`
-	Expires   time.Time `json:"expires"             db:"expires"`
 	DeletedAt time.Time `json:"deletedAt,omitempty" db:"deleted_at"`
 }

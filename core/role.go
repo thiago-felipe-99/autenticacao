@@ -19,8 +19,8 @@ type Role struct {
 func (r *Role) GetByName(name string) (*model.Role, error) {
 	role, err := r.database.GetByName(name)
 	if err != nil {
-		if errors.Is(err, errs.ErrRoleNotFoud) {
-			return nil, errs.ErrRoleNotFoud
+		if errors.Is(err, errs.ErrRoleNotFound) {
+			return nil, errs.ErrRoleNotFound
 		}
 
 		return nil, fmt.Errorf("error getting role from database: %w", err)
@@ -32,10 +32,6 @@ func (r *Role) GetByName(name string) (*model.Role, error) {
 func (r *Role) GetAll(paginate int, qt int) ([]model.Role, error) {
 	roles, err := r.database.GetAll(paginate, qt)
 	if err != nil {
-		if errors.Is(err, errs.ErrRoleNotFoud) {
-			return nil, errs.ErrRoleNotFoud
-		}
-
 		return nil, fmt.Errorf("error getting role from database: %w", err)
 	}
 
@@ -49,7 +45,7 @@ func (r *Role) Create(createdBy model.ID, partial model.RolePartial) error {
 	}
 
 	_, err = r.GetByName(partial.Name)
-	if err != nil && !errors.Is(err, errs.ErrRoleNotFoud) {
+	if err != nil && !errors.Is(err, errs.ErrRoleNotFound) {
 		return err
 	}
 

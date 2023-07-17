@@ -30,7 +30,7 @@ func (r *RoleSQL) GetByName(name string) (*model.Role, error) {
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errs.ErrRoleNotFoud
+			return nil, errs.ErrRoleNotFound
 		}
 
 		return nil, fmt.Errorf("error get role by name in database: %w", err)
@@ -54,10 +54,6 @@ func (r *RoleSQL) GetAll(paginate int, qt int) ([]model.Role, error) {
 		qt*paginate,
 	)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errs.ErrRoleNotFoud
-		}
-
 		return nil, fmt.Errorf("error get roles in database: %w", err)
 	}
 

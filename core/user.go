@@ -23,7 +23,7 @@ func (u *User) validateRoles(roles []string) (bool, error) {
 	for _, role := range roles {
 		_, err := u.role.GetByName(role)
 		if err != nil {
-			if errors.Is(err, errs.ErrRoleNotFoud) {
+			if errors.Is(err, errs.ErrRoleNotFound) {
 				return false, nil
 			}
 

@@ -159,15 +159,6 @@ func (u *User) Update(userID model.ID, partial model.UserUpdate) error {
 		return err
 	}
 
-	exist, err := u.role.Exist(partial.Roles)
-	if err != nil {
-		return err
-	}
-
-	if !exist {
-		return errs.ErrRoleNotFound
-	}
-
 	user, err := u.GetByID(userID)
 	if err != nil {
 		return err
@@ -213,7 +204,20 @@ func (u *User) Update(userID model.ID, partial model.UserUpdate) error {
 	}
 
 	if partial.Roles != nil {
+		exist, err := u.role.Exist(partial.Roles)
+		if err != nil {
+			return err
+		}
+
+		if !exist {
+			return errs.ErrRoleNotFound
+		}
+
 		user.Roles = partial.Roles
+	}
+
+	if partial.IsActive != nil {
+		user.IsActive = *partial.IsActive
 	}
 
 	err = u.database.Update(*user)

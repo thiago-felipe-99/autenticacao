@@ -59,3 +59,7 @@ func createTempDB(t *testing.T, name string) *sqlx.DB {
 
 	return db
 }
+
+func boolPointer(b bool) *bool {
+	return &b
+}

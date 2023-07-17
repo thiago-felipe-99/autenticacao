@@ -73,7 +73,7 @@ var invalidUserPartialInputs = []struct { //nolint:gochecknoglobals
 		Name:     gofakeit.Name(),
 		Username: gofakeit.Username(),
 		Email:    gofakeit.Email(),
-		Password: gofakeit.Password(true, true, true, true, true, 300),
+		Password: gofakeit.Password(true, true, true, true, true, 256),
 		Roles:    []string{},
 	}},
 	{"InvalidUsername", model.UserPartial{
@@ -92,6 +92,53 @@ var invalidUserPartialInputs = []struct { //nolint:gochecknoglobals
 	}},
 }
 
+//nolint:gochecknoglobals,exhaustruct
+var invalidUserUpdateInputs = []struct {
+	name  string
+	input model.UserUpdate
+}{
+	{"LongName", model.UserUpdate{Name: gofakeit.LetterN(256)}},
+	{"LongUsername", model.UserUpdate{Username: gofakeit.LetterN(256)}},
+	{"LongEmail", model.UserUpdate{Email: gofakeit.LetterN(256) + gofakeit.Email()}},
+	{
+		"LongPassword",
+		model.UserUpdate{Password: gofakeit.Password(true, true, true, true, true, 300)},
+	},
+	{"InvalidUsername", model.UserUpdate{Username: gofakeit.Username() + "%$#¨"}},
+	{"InvalidEmail", model.UserUpdate{Email: gofakeit.LetterN(25)}},
+}
+
+//nolint:gochecknoglobals,exhaustruct
+var validUserUpdateInputs = []struct {
+	name  string
+	input model.UserUpdate
+}{
+	{"OnlyName", model.UserUpdate{Name: gofakeit.Name()}},
+	{"OnlyUsername", model.UserUpdate{Username: gofakeit.Username()}},
+	{"OnlyEmail", model.UserUpdate{Email: gofakeit.Email()}},
+	{
+		"OnlyPassword",
+		model.UserUpdate{Password: gofakeit.Password(true, true, true, true, true, 20)},
+	},
+	{"OnlyIsActive", model.UserUpdate{IsActive: boolPointer(false)}},
+}
+
+func randomSliceString(valids []string) []string {
+	qt := gofakeit.Number(1, 5)
+	slice := make([]string, 0, qt)
+
+	for i := 0; i < qt && len(valids) > 0; i++ {
+		element := gofakeit.RandomString(valids)
+		for slices.Contains(slice, element) {
+			element = gofakeit.RandomString(valids)
+		}
+
+		slice = append(slice, element)
+	}
+
+	return slice
+}
+
 func createTempUser(
 	t *testing.T,
 	user *core.User,
@@ -100,17 +147,7 @@ func createTempUser(
 ) (model.ID, model.ID, model.UserPartial) {
 	t.Helper()
 
-	qtRoles := gofakeit.Number(1, 5)
-	roles := make([]string, 0, qtRoles)
-
-	for i := 0; i < qtRoles && len(validRoles) > 0; i++ {
-		role := gofakeit.RandomString(validRoles)
-		for slices.Contains(roles, role) {
-			role = gofakeit.RandomString(validRoles)
-		}
-
-		roles = append(roles, role)
-	}
+	roles := randomSliceString(validRoles)
 
 	id := model.NewID()
 	input := model.UserPartial{
@@ -175,7 +212,7 @@ func TestUserCreate(t *testing.T) {
 		}
 	})
 
-	t.Run("InvalidRole", func(t *testing.T) {
+	t.Run("RoleNotFound", func(t *testing.T) {
 		t.Parallel()
 
 		input := model.UserPartial{
@@ -388,5 +425,176 @@ func TestUserGet(t *testing.T) {
 
 		_, err := user.GetByRole([]string{gofakeit.Name()}, 0, qtUsers)
 		assert.ErrorIs(t, err, errs.ErrRoleNotFound)
+	})
+}
+
+func assertUserUpdate(
+	t *testing.T,
+	update model.UserUpdate,
+	userTmp model.UserPartial,
+	userid model.ID,
+	user *core.User,
+) {
+	t.Helper()
+
+	userdb, err := user.GetByID(userid)
+	assert.NoError(t, err)
+
+	if update.Name != "" {
+		assert.Equal(t, update.Name, userdb.Name)
+	} else {
+		assert.Equal(t, userTmp.Name, userdb.Name)
+	}
+
+	if update.Username != "" {
+		assert.Equal(t, update.Username, userdb.Username)
+	} else {
+		assert.Equal(t, userTmp.Username, userdb.Username)
+	}
+
+	if update.Email != "" {
+		assert.Equal(t, update.Email, userdb.Email)
+	} else {
+		assert.Equal(t, userTmp.Email, userdb.Email)
+	}
+
+	if update.Roles != nil {
+		assert.Equal(t, update.Roles, userdb.Roles)
+	} else {
+		assert.Equal(t, userTmp.Roles, userdb.Roles)
+	}
+
+	if update.IsActive != nil {
+		assert.Equal(t, *update.IsActive, userdb.IsActive)
+	}
+
+	if update.Password != "" {
+		match, _, err := argon2id.CheckHash(update.Password, userdb.Password)
+		assert.NoError(t, err)
+		assert.True(t, match)
+	} else {
+		match, _, err := argon2id.CheckHash(userTmp.Password, userdb.Password)
+		assert.NoError(t, err)
+		assert.True(t, match)
+	}
+}
+
+func TestUserUpdate(t *testing.T) {
+	t.Parallel()
+
+	db := createTempDB(t, "role_get")
+
+	role := core.NewRole(data.NewRoleSQL(db), validator.New())
+	user := core.NewUser(data.NewUserSQL(db), role, validator.New())
+
+	qtRoles := 10
+	roles := make([]string, qtRoles)
+
+	for i := range roles {
+		_, role := createTempRole(t, role, db)
+		roles[i] = role.Name
+	}
+
+	t.Run("ValidInputs", func(t *testing.T) {
+		t.Parallel()
+
+		for _, test := range validUserUpdateInputs {
+			test := test
+
+			t.Run(test.name, func(t *testing.T) {
+				t.Parallel()
+
+				userid, _, userTmp := createTempUser(t, user, db, roles)
+
+				err := user.Update(userid, test.input)
+				assert.NoError(t, err)
+
+				assertUserUpdate(t, test.input, userTmp, userid, user)
+			})
+		}
+	})
+
+	t.Run("ValidInputs/OnlyRole", func(t *testing.T) {
+		t.Parallel()
+
+		userid, _, userTmp := createTempUser(t, user, db, roles)
+
+		update := model.UserUpdate{Roles: randomSliceString(roles)} //nolint:exhaustruct
+
+		err := user.Update(userid, update)
+		assert.NoError(t, err)
+
+		assertUserUpdate(t, update, userTmp, userid, user)
+	})
+
+	t.Run("ValidInputs/All", func(t *testing.T) {
+		t.Parallel()
+
+		userid, _, userTmp := createTempUser(t, user, db, roles)
+
+		update := model.UserUpdate{
+			Name:     gofakeit.Name(),
+			Username: gofakeit.Username(),
+			Email:    gofakeit.Email(),
+			Password: gofakeit.Password(true, true, true, true, true, 20),
+			Roles:    randomSliceString(roles),
+			IsActive: boolPointer(false),
+		}
+
+		err := user.Update(userid, update)
+		assert.NoError(t, err)
+
+		assertUserUpdate(t, update, userTmp, userid, user)
+	})
+
+	t.Run("InvalidInputs", func(t *testing.T) {
+		t.Parallel()
+
+		for _, test := range invalidUserUpdateInputs {
+			test := test
+
+			t.Run(test.name, func(t *testing.T) {
+				t.Parallel()
+
+				err := user.Update(model.NewID(), test.input)
+				assert.ErrorAs(t, err, &core.ModelInvalidError{})
+			})
+		}
+	})
+
+	t.Run("RoleNotFound", func(t *testing.T) {
+		t.Parallel()
+
+		userid, _, _ := createTempUser(t, user, db, roles)
+		input := model.UserUpdate{Roles: []string{gofakeit.Name()}} //nolint:exhaustruct
+		err := user.Update(userid, input)
+		assert.ErrorIs(t, err, errs.ErrRoleNotFound)
+	})
+
+	t.Run("UserNotFound", func(t *testing.T) {
+		t.Parallel()
+
+		input := model.UserUpdate{Name: gofakeit.Name()} //nolint:exhaustruct
+		err := user.Update(model.NewID(), input)
+		assert.ErrorIs(t, err, errs.ErrUserNotFoud)
+	})
+
+	t.Run("Duplicate", func(t *testing.T) {
+		t.Parallel()
+
+		id1, _, _ := createTempUser(t, user, db, roles)
+		_, _, userTmp2 := createTempUser(t, user, db, roles)
+
+		t.Run("Username", func(t *testing.T) {
+			input := model.UserUpdate{Username: userTmp2.Username} //nolint:exhaustruct
+			err := user.Update(id1, input)
+			assert.ErrorIs(t, err, errs.ErrUsernameAlreadyExist)
+		})
+
+		t.Run("Email", func(t *testing.T) {
+			input := model.UserUpdate{Email: userTmp2.Email} //nolint:exhaustruct
+			err := user.Update(id1, input)
+			assert.ErrorIs(t, err, errs.ErrEmailAlreadyExist)
+		})
 	})
 }

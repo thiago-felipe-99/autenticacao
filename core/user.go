@@ -1,6 +1,7 @@
 package core
 
 import (
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"time"
@@ -14,10 +15,11 @@ import (
 )
 
 type User struct {
-	database data.User
-	role     *Role
-	validate *validator.Validate
-	argon2id argon2id.Params
+	database    data.User
+	role        *Role
+	validate    *validator.Validate
+	argon2id    argon2id.Params
+	argonEnable bool
 }
 
 func (u *User) GetByID(id model.ID) (*model.User, error) {
@@ -119,7 +121,7 @@ func (u *User) Create(createdBy model.ID, partial model.UserPartial) (model.ID, 
 		return model.ID{}, errs.ErrEmailAlreadyExist
 	}
 
-	hash, err := argon2id.CreateHash(partial.Password, &u.argon2id)
+	hash, err := u.createHash(partial.Password)
 	if err != nil {
 		return model.ID{}, fmt.Errorf("error creating password hash: %w", err)
 	}
@@ -195,7 +197,7 @@ func (u *User) Update(userID model.ID, partial model.UserUpdate) error {
 	}
 
 	if partial.Password != "" {
-		hash, err := argon2id.CreateHash(partial.Password, &u.argon2id)
+		hash, err := u.createHash(partial.Password)
 		if err != nil {
 			return fmt.Errorf("error creating password hash: %w", err)
 		}
@@ -242,11 +244,42 @@ func (u *User) Delete(userID model.ID, deleteByID model.ID) error {
 	return nil
 }
 
-func NewUser(database data.User, role *Role, validate *validator.Validate) *User {
+func (u *User) createHash(password string) (string, error) {
+	if u.argonEnable {
+		hash, err := argon2id.CreateHash(password, &u.argon2id)
+		if err != nil {
+			return "", fmt.Errorf("error creating password hash: %w", err)
+		}
+
+		return hash, nil
+	}
+
+	hash := sha256.Sum256([]byte(password))
+
+	return fmt.Sprintf("%x", hash), nil
+}
+
+func (u *User) EqualPassword(password string, hash string) (bool, error) {
+	if u.argonEnable {
+		match, err := argon2id.ComparePasswordAndHash(password, hash)
+		if err != nil {
+			return false, fmt.Errorf("error comparaing hash: %w", err)
+		}
+
+		return match, nil
+	}
+
+	hashp := fmt.Sprintf("%x", sha256.Sum256([]byte(password)))
+
+	return hash == hashp, nil
+}
+
+func NewUser(database data.User, role *Role, validate *validator.Validate, argonEnable bool) *User {
 	return &User{
-		database: database,
-		role:     role,
-		validate: validate,
-		argon2id: *argon2id.DefaultParams,
+		database:    database,
+		role:        role,
+		validate:    validate,
+		argon2id:    *argon2id.DefaultParams,
+		argonEnable: argonEnable,
 	}
 }

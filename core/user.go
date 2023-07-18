@@ -25,8 +25,8 @@ type User struct {
 func (u *User) GetByID(id model.ID) (*model.User, error) {
 	user, err := u.database.GetByID(id)
 	if err != nil {
-		if errors.Is(err, errs.ErrUserNotFoud) {
-			return nil, errs.ErrUserNotFoud
+		if errors.Is(err, errs.ErrUserNotFound) {
+			return nil, errs.ErrUserNotFound
 		}
 
 		return nil, fmt.Errorf("error on getting user from database: %w", err)
@@ -38,8 +38,8 @@ func (u *User) GetByID(id model.ID) (*model.User, error) {
 func (u *User) GetByUsername(username string) (*model.User, error) {
 	user, err := u.database.GetByUsername(username)
 	if err != nil {
-		if errors.Is(err, errs.ErrUserNotFoud) {
-			return nil, errs.ErrUserNotFoud
+		if errors.Is(err, errs.ErrUserNotFound) {
+			return nil, errs.ErrUserNotFound
 		}
 
 		return nil, fmt.Errorf("error on getting user from database: %w", err)
@@ -51,8 +51,8 @@ func (u *User) GetByUsername(username string) (*model.User, error) {
 func (u *User) GetByEmail(email string) (*model.User, error) {
 	user, err := u.database.GetByEmail(email)
 	if err != nil {
-		if errors.Is(err, errs.ErrUserNotFoud) {
-			return nil, errs.ErrUserNotFoud
+		if errors.Is(err, errs.ErrUserNotFound) {
+			return nil, errs.ErrUserNotFound
 		}
 
 		return nil, fmt.Errorf("error on getting user from database: %w", err)
@@ -104,7 +104,7 @@ func (u *User) Create(createdBy model.ID, partial model.UserPartial) (model.ID, 
 	}
 
 	_, err = u.GetByUsername(partial.Username)
-	if err != nil && !errors.Is(err, errs.ErrUserNotFoud) {
+	if err != nil && !errors.Is(err, errs.ErrUserNotFound) {
 		return model.ID{}, err
 	}
 
@@ -113,7 +113,7 @@ func (u *User) Create(createdBy model.ID, partial model.UserPartial) (model.ID, 
 	}
 
 	_, err = u.GetByEmail(partial.Email)
-	if err != nil && !errors.Is(err, errs.ErrUserNotFoud) {
+	if err != nil && !errors.Is(err, errs.ErrUserNotFound) {
 		return model.ID{}, err
 	}
 
@@ -172,7 +172,7 @@ func (u *User) Update(userID model.ID, partial model.UserUpdate) error {
 
 	if partial.Username != "" {
 		_, err = u.GetByUsername(partial.Username)
-		if err != nil && !errors.Is(err, errs.ErrUserNotFoud) {
+		if err != nil && !errors.Is(err, errs.ErrUserNotFound) {
 			return err
 		}
 
@@ -185,7 +185,7 @@ func (u *User) Update(userID model.ID, partial model.UserUpdate) error {
 
 	if partial.Email != "" {
 		_, err = u.GetByEmail(partial.Email)
-		if err != nil && !errors.Is(err, errs.ErrUserNotFoud) {
+		if err != nil && !errors.Is(err, errs.ErrUserNotFound) {
 			return err
 		}
 

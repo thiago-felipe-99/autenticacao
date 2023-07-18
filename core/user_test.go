@@ -171,7 +171,7 @@ func createTempUser(
 func TestUserCreate(t *testing.T) {
 	t.Parallel()
 
-	db := createTempDB(t, "role_create")
+	db := createTempDB(t, "user_create")
 
 	role := core.NewRole(data.NewRoleSQL(db), validator.New())
 	user := core.NewUser(data.NewUserSQL(db), role, validator.New(), false)
@@ -265,7 +265,7 @@ func assertUser(t *testing.T, partial partialUser, userdb model.User, user *core
 	assert.Equal(t, partial.input.Email, userdb.Email)
 	assert.Equal(t, partial.input.Roles, userdb.Roles)
 	assert.True(t, userdb.IsActive)
-	assert.LessOrEqual(t, time.Since(userdb.CreatedAt), time.Minute)
+	assert.LessOrEqual(t, time.Since(userdb.CreatedAt), time.Second)
 	assert.Equal(t, partial.createdBy, userdb.CreatedBy)
 	assert.True(t, time.Time{}.Equal(userdb.DeletedAt))
 	assert.Equal(t, model.ID{}, userdb.DeletedBy)
@@ -278,7 +278,7 @@ func assertUser(t *testing.T, partial partialUser, userdb model.User, user *core
 func TestUserGet(t *testing.T) { //nolint:funlen
 	t.Parallel()
 
-	db := createTempDB(t, "role_get")
+	db := createTempDB(t, "user_get")
 
 	role := core.NewRole(data.NewRoleSQL(db), validator.New())
 	user := core.NewUser(data.NewUserSQL(db), role, validator.New(), false)
@@ -366,7 +366,7 @@ func TestUserGet(t *testing.T) { //nolint:funlen
 		t.Parallel()
 
 		_, err := user.GetByID(model.NewID())
-		assert.ErrorIs(t, err, errs.ErrUserNotFoud)
+		assert.ErrorIs(t, err, errs.ErrUserNotFound)
 	})
 
 	t.Run("GetAll", func(t *testing.T) {
@@ -501,7 +501,7 @@ func assertUserUpdate(
 func TestUserUpdate(t *testing.T) {
 	t.Parallel()
 
-	db := createTempDB(t, "role_update")
+	db := createTempDB(t, "user_update")
 
 	role := core.NewRole(data.NewRoleSQL(db), validator.New())
 	user := core.NewUser(data.NewUserSQL(db), role, validator.New(), false)
@@ -595,7 +595,7 @@ func TestUserUpdate(t *testing.T) {
 
 		input := model.UserUpdate{Name: gofakeit.Name()} //nolint:exhaustruct
 		err := user.Update(model.NewID(), input)
-		assert.ErrorIs(t, err, errs.ErrUserNotFoud)
+		assert.ErrorIs(t, err, errs.ErrUserNotFound)
 	})
 
 	t.Run("Duplicate", func(t *testing.T) {
@@ -640,7 +640,7 @@ func assertUserDelete(t *testing.T, partial partialUser, userdb model.User, user
 func TestUserDelete(t *testing.T) { //nolint:funlen
 	t.Parallel()
 
-	db := createTempDB(t, "role_get")
+	db := createTempDB(t, "user_get")
 
 	role := core.NewRole(data.NewRoleSQL(db), validator.New())
 	user := core.NewUser(data.NewUserSQL(db), role, validator.New(), false)
@@ -706,21 +706,21 @@ func TestUserDelete(t *testing.T) { //nolint:funlen
 			t.Parallel()
 
 			_, err := user.GetByID(userTemp.userID)
-			assert.ErrorIs(t, err, errs.ErrUserNotFoud)
+			assert.ErrorIs(t, err, errs.ErrUserNotFound)
 		})
 
 		t.Run("GetByUsername", func(t *testing.T) {
 			t.Parallel()
 
 			_, err := user.GetByUsername(userTemp.input.Username)
-			assert.ErrorIs(t, err, errs.ErrUserNotFoud)
+			assert.ErrorIs(t, err, errs.ErrUserNotFound)
 		})
 
 		t.Run("GetByEmail", func(t *testing.T) {
 			t.Parallel()
 
 			_, err := user.GetByEmail(userTemp.input.Email)
-			assert.ErrorIs(t, err, errs.ErrUserNotFoud)
+			assert.ErrorIs(t, err, errs.ErrUserNotFound)
 		})
 	}
 
@@ -798,14 +798,14 @@ func TestUserDelete(t *testing.T) { //nolint:funlen
 		t.Parallel()
 
 		err := user.Delete(model.NewID(), model.NewID())
-		assert.ErrorIs(t, err, errs.ErrUserNotFoud)
+		assert.ErrorIs(t, err, errs.ErrUserNotFound)
 	})
 }
 
 func TestUserWithArgon(t *testing.T) {
 	t.Parallel()
 
-	db := createTempDB(t, "role_get_argon")
+	db := createTempDB(t, "user_get_argon")
 
 	role := core.NewRole(data.NewRoleSQL(db), validator.New())
 	user := core.NewUser(data.NewUserSQL(db), role, validator.New(), true)
@@ -847,7 +847,7 @@ func TestUserWithArgon(t *testing.T) {
 			assert.NoError(t, err)
 
 			_, err = user.GetByID(userid)
-			assert.ErrorIs(t, err, errs.ErrUserNotFoud)
+			assert.ErrorIs(t, err, errs.ErrUserNotFound)
 		})
 	}
 }

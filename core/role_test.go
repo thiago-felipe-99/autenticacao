@@ -152,7 +152,7 @@ func TestRoleGet(t *testing.T) {
 func TestRoleDelete(t *testing.T) {
 	t.Parallel()
 
-	db := createTempDB(t, "role_get")
+	db := createTempDB(t, "role_delete")
 	role := core.NewRole(data.NewRoleSQL(db), validator.New())
 	qtRoles := 100
 	rolesTmp := make([]string, qtRoles)

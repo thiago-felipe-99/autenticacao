@@ -5,7 +5,7 @@ import "errors"
 var (
 	ErrInvalidID            = errors.New("ID is not a string")
 	ErrBodyValidate         = errors.New("unable to parse body")
-	ErrUserNotFoud          = errors.New("user not found")
+	ErrUserNotFound          = errors.New("user not found")
 	ErrUsernameAlreadyExist = errors.New("username already exist")
 	ErrEmailAlreadyExist    = errors.New("emails already exist")
 	ErrRoleNotFound         = errors.New("role not found")

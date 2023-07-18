@@ -30,7 +30,7 @@ func (u *UserSQL) GetByID(id model.ID) (*model.User, error) {
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errs.ErrUserNotFoud
+			return nil, errs.ErrUserNotFound
 		}
 
 		return nil, fmt.Errorf("error get user by id in database: %w", err)
@@ -53,7 +53,7 @@ func (u *UserSQL) GetByUsername(username string) (*model.User, error) {
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errs.ErrUserNotFoud
+			return nil, errs.ErrUserNotFound
 		}
 
 		return nil, fmt.Errorf("error get user by username in database: %w", err)
@@ -76,7 +76,7 @@ func (u *UserSQL) GetByEmail(email string) (*model.User, error) {
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errs.ErrUserNotFoud
+			return nil, errs.ErrUserNotFound
 		}
 
 		return nil, fmt.Errorf("error get user by email in database: %w", err)

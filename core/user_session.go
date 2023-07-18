@@ -107,3 +107,17 @@ func (u *UserSession) Delete(id model.ID) (*model.UserSession, error) {
 
 	return userSession, nil
 }
+
+func NewUserSession(
+	db data.UserSession,
+	user *User,
+	validate *validator.Validate,
+	expires time.Duration,
+) *UserSession {
+	return &UserSession{
+		database:  db,
+		user:      user,
+		validator: validate,
+		expires:   expires,
+	}
+}

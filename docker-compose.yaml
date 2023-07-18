@@ -11,6 +11,14 @@ services:
       - 5432:5432
     volumes:
       - postgres:/var/lib/postgresql
-
+  redis:
+    image: redis:alpine
+    restart: always
+    ports:
+      - '6379:6379'
+    command: redis-server --save 60 1 --loglevel warning --requirepass qt4BLAnrrNSZp2ssRMkLzZjnaZQkcL22
+    volumes: 
+      - redis:/data
 volumes:
   postgres: 
+  redis:

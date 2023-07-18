@@ -82,19 +82,6 @@ func (u *UserSession) Create(partial model.UserSessionPartial) (*model.UserSessi
 	return &userSession, nil
 }
 
-func (u *UserSession) Refresh(id model.ID) (*model.UserSession, error) {
-	userSession, err := u.database.Refresh(id, time.Now(), model.NewID(), u.expires)
-	if err != nil {
-		if errors.Is(err, errs.ErrUserSessionNotFoud) {
-			return nil, errs.ErrUserSessionNotFoud
-		}
-
-		return nil, fmt.Errorf("error creating user session on database: %w", err)
-	}
-
-	return userSession, nil
-}
-
 func (u *UserSession) Delete(id model.ID) (*model.UserSession, error) {
 	userSession, err := u.database.Delete(id, time.Now())
 	if err != nil {
@@ -103,6 +90,27 @@ func (u *UserSession) Delete(id model.ID) (*model.UserSession, error) {
 		}
 
 		return nil, fmt.Errorf("error deleting user session from database: %w", err)
+	}
+
+	return userSession, nil
+}
+
+func (u *UserSession) Refresh(id model.ID) (*model.UserSession, error) {
+	userSession, err := u.Delete(id)
+	if err != nil {
+		return nil, err
+	}
+
+	userSession = &model.UserSession{
+		ID:        model.NewID(),
+		UserID:    userSession.UserID,
+		CreateaAt: time.Now(),
+		DeletedAt: time.Time{},
+	}
+
+	err = u.database.Create(*userSession, u.expires)
+	if err != nil {
+		return nil, fmt.Errorf("error creating user session on database: %w", err)
 	}
 
 	return userSession, nil

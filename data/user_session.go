@@ -87,49 +87,6 @@ func (u *UserSessionRedis) Create(user model.UserSession, expires time.Duration)
 	return nil
 }
 
-func (u *UserSessionRedis) Refresh(
-	oldID model.ID,
-	deletedAt time.Time,
-	newID model.ID,
-	expires time.Duration,
-) (*model.UserSession, error) {
-	serial, err := u.redis.GetDel(context.Background(), oldID.String()).Bytes()
-	if err != nil {
-		if errors.Is(err, redis.Nil) {
-			return nil, errs.ErrUserSessionNotFoud
-		}
-
-		return nil, fmt.Errorf("error getting user session from redis: %w", err)
-	}
-
-	var userSession model.UserSession
-
-	err = msgpack.Unmarshal(serial, &userSession)
-	if err != nil {
-		return nil, fmt.Errorf("error unmarshaling user session: %w", err)
-	}
-
-	userDeleted := userSession
-	userDeleted.DeletedAt = deletedAt
-	u.deleted <- userDeleted
-
-	userSession.ID = newID
-
-	serial, err = msgpack.Marshal(&userSession)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling user session: %w", err)
-	}
-
-	_, err = u.redis.Set(context.Background(), newID.String(), serial, expires).Result()
-	if err != nil {
-		return nil, fmt.Errorf("error setting user session in redis: %w", err)
-	}
-
-	u.created <- userSession
-
-	return &userSession, nil
-}
-
 func (u *UserSessionRedis) Delete(id model.ID, deletetAd time.Time) (*model.UserSession, error) {
 	serial, err := u.redis.GetDel(context.Background(), id.String()).Bytes()
 	if err != nil {

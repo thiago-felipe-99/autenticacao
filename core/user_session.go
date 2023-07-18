@@ -83,7 +83,7 @@ func (u *UserSession) Create(partial model.UserSessionPartial) (*model.UserSessi
 }
 
 func (u *UserSession) Refresh(id model.ID) (*model.UserSession, error) {
-	userSession, err := u.database.Refresh(id, model.NewID(), u.expires)
+	userSession, err := u.database.Refresh(id, time.Now(), model.NewID(), u.expires)
 	if err != nil {
 		if errors.Is(err, errs.ErrUserSessionNotFoud) {
 			return nil, errs.ErrUserSessionNotFoud

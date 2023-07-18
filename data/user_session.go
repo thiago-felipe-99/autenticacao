@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -13,11 +14,17 @@ import (
 	"github.com/vmihailenco/msgpack/v5"
 )
 
+var (
+	errMaxBiggerThanBuffer = fmt.Errorf("max must be less than buffer size")
+	errSmallClock          = fmt.Errorf("clock must be greater o equal to 1 second")
+)
+
 type UserSessionRedis struct {
-	redis    *redis.Client
-	database *sqlx.DB
-	created  chan model.UserSession
-	deleted  chan model.UserSession
+	redis      *redis.Client
+	database   *sqlx.DB
+	created    chan model.UserSession
+	deleted    chan model.UserSession
+	bufferSize int
 }
 
 func (u *UserSessionRedis) GetAll(paginate int, qt int) ([]model.UserSession, error) {
@@ -146,13 +153,60 @@ func (u *UserSessionRedis) Delete(id model.ID, deletetAd time.Time) (*model.User
 	return &userSession, nil
 }
 
-func (u *UserSessionRedis) consumeCreated() {}
+func (u *UserSessionRedis) consumeChan(
+	clock time.Duration,
+	max int,
+	users <-chan model.UserSession,
+	table string,
+) {
+	ticker := time.NewTicker(clock)
 
-func (u *UserSessionRedis) consumeDeleted() {}
+	usersSessions := make([]model.UserSession, 0, max)
 
-func (u *UserSessionRedis) ConsumeQueues() {
-	go u.consumeCreated()
-	go u.consumeDeleted()
+	query := fmt.Sprintf(
+		"INSERT INTO %s (id, userid, created_at, created_by) VALUES (:id, :userid, :created_at, :created_by)",
+		table,
+	)
+
+	saveDatabase := func() {
+		_, err := u.database.NamedExec(query, usersSessions)
+		if err != nil {
+			log.Printf("[ERROR] - Error inserting user sessions in %s: %s", table, err)
+		}
+
+		usersSessions = usersSessions[:0]
+	}
+
+	for {
+		select {
+		case userSession := <-users:
+			usersSessions = append(usersSessions, userSession)
+
+			if len(usersSessions) >= max {
+				saveDatabase()
+
+				ticker.Reset(clock)
+			}
+
+		case <-ticker.C:
+			saveDatabase()
+		}
+	}
+}
+
+func (u *UserSessionRedis) ConsumeQueues(clock time.Duration, max int) error {
+	if max >= u.bufferSize {
+		return errMaxBiggerThanBuffer
+	}
+
+	if clock < time.Second {
+		return errSmallClock
+	}
+
+	go u.consumeChan(clock, max, u.created, "users_sessions_created")
+	go u.consumeChan(clock, max, u.deleted, "users_sessions_deleted")
+
+	return nil
 }
 
 var _ UserSession = &UserSessionRedis{} //nolint:exhaustruct
@@ -160,13 +214,13 @@ var _ UserSession = &UserSessionRedis{} //nolint:exhaustruct
 func NewUserSessionRedis(
 	redis *redis.Client,
 	database *sqlx.DB,
-	createdSize int,
-	deletedSize int,
+	bufferSize int,
 ) *UserSessionRedis {
 	return &UserSessionRedis{
-		redis:    redis,
-		database: database,
-		created:  make(chan model.UserSession, createdSize),
-		deleted:  make(chan model.UserSession, deletedSize),
+		redis:      redis,
+		database:   database,
+		created:    make(chan model.UserSession, bufferSize),
+		deleted:    make(chan model.UserSession, bufferSize),
+		bufferSize: bufferSize,
 	}
 }

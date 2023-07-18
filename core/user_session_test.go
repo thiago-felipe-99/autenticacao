@@ -246,3 +246,61 @@ func TestUserSessionRefresh(t *testing.T) {
 		assert.ErrorIs(t, err, errs.ErrUserSessionNotFoud)
 	})
 }
+
+func TestUserSessionDelete(t *testing.T) {
+	t.Parallel()
+
+	db := createTempDB(t, "user_session_create")
+	redisClient := redis.NewClient(&redis.Options{ //nolint:exhaustruct
+		Addr:     "localhost:6379",
+		Password: "qt4BLAnrrNSZp2ssRMkLzZjnaZQkcL22",
+		DB:       0,
+	})
+
+	role := core.NewRole(data.NewRoleSQL(db), validator.New())
+	user := core.NewUser(data.NewUserSQL(db), role, validator.New(), false)
+	userSession := core.NewUserSession(
+		data.NewUserSessionRedis(redisClient, db, 100),
+		user,
+		validator.New(),
+		time.Second,
+	)
+
+	qtRoles := 5
+	rolesTemp := make([]string, qtRoles)
+
+	for i := range rolesTemp {
+		_, role := createTempRole(t, role, db)
+		rolesTemp[i] = role.Name
+	}
+
+	userID, _, userInput := createTempUser(t, user, db, rolesTemp)
+
+	t.Run("ValiInputs", func(t *testing.T) {
+		t.Parallel()
+
+		UserSessionPartial := model.UserSessionPartial{ //nolint:exhaustruct
+			Username: userInput.Username,
+			Password: userInput.Password,
+		}
+
+		userSessionTemp1, err := userSession.Create(UserSessionPartial)
+		assert.NoError(t, err)
+
+		userSessionTemp2, err := userSession.Delete(userSessionTemp1.ID)
+		assert.NoError(t, err)
+
+		assert.Equal(t, userSessionTemp1.ID, userSessionTemp2.ID)
+		assert.Equal(t, userID, userSessionTemp2.UserID)
+		assert.LessOrEqual(t, time.Since(userSessionTemp2.CreateaAt), time.Second)
+		assert.LessOrEqual(t, time.Since(userSessionTemp2.DeletedAt), time.Second)
+	})
+
+	t.Run("UserSessionNotFound", func(t *testing.T) {
+		t.Parallel()
+
+		userSessionTemp, err := userSession.Delete(model.NewID())
+		assert.Nil(t, userSessionTemp)
+		assert.ErrorIs(t, err, errs.ErrUserSessionNotFoud)
+	})
+}

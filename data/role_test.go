@@ -48,6 +48,16 @@ func TestRoleCreate(t *testing.T) {
 	})
 }
 
+func checkRole(t *testing.T, expected, found model.Role) {
+	t.Helper()
+
+	assert.Equal(t, expected.Name, found.Name)
+	assert.LessOrEqual(t, expected.CreatedAt.Sub(found.CreatedAt), time.Second)
+	assert.Equal(t, expected.CreatedBy, found.CreatedBy)
+	assert.LessOrEqual(t, expected.DeletedAt.Sub(found.DeletedAt), time.Second)
+	assert.Equal(t, expected.DeletedBy, found.DeletedBy)
+}
+
 func TestRoleGetByName(t *testing.T) {
 	t.Parallel()
 
@@ -66,11 +76,7 @@ func TestRoleGetByName(t *testing.T) {
 
 			found, err := role.GetByName(tempRole.Name)
 			assert.NoError(t, err)
-			assert.Equal(t, found.Name, tempRole.Name)
-			assert.LessOrEqual(t, found.CreatedAt.Sub(tempRole.CreatedAt), time.Second)
-			assert.Equal(t, found.CreatedBy, tempRole.CreatedBy)
-			assert.True(t, found.DeletedAt.Equal(tempRole.DeletedAt))
-			assert.Equal(t, found.DeletedBy, tempRole.DeletedBy)
+			checkRole(t, tempRole, *found)
 		})
 	}
 
@@ -182,12 +188,11 @@ func TestRoleExist(t *testing.T) {
 	})
 }
 
-func TestRoleGetAll(t *testing.T) {
+func TestRoleGetAll(t *testing.T) { //nolint:dupl
 	t.Parallel()
 
 	qtRoles := 100
-	createRoles := make([]model.Role, 0, qtRoles)
-	rolesName := make([]string, 0, qtRoles)
+	createdRoles := make([]model.Role, 0, qtRoles)
 
 	role := data.NewRoleSQL(createTempDB(t, "data_role_get_all"))
 
@@ -197,7 +202,7 @@ func TestRoleGetAll(t *testing.T) {
 
 	for i := 0; i < qtRoles; i++ {
 		tempRole := createRole()
-		createRoles = append(createRoles, tempRole)
+		createdRoles = append(createdRoles, tempRole)
 
 		err := role.Create(tempRole)
 		assert.NoError(t, err)
@@ -209,15 +214,31 @@ func TestRoleGetAll(t *testing.T) {
 
 	id := model.NewID()
 
-	for _, roleDB := range roles {
-		rolesName = append(rolesName, roleDB.Name)
+	for _, createdRole := range createdRoles {
+		index := slices.IndexFunc(roles, func(role model.Role) bool {
+			return role.Name == createdRole.Name
+		})
+		assert.GreaterOrEqual(t, index, 0)
+		checkRole(t, createdRole, roles[index])
 
-		err := role.Delete(roleDB.Name, time.Now(), id)
+		err := role.Delete(createdRole.Name, time.Now(), id)
 		assert.NoError(t, err)
 	}
 
-	for _, createRole := range createRoles {
-		assert.True(t, slices.Contains(rolesName, createRole.Name))
+	roles, err = role.GetAll(0, qtRoles)
+	assert.NoError(t, err)
+	assert.Equal(t, len(roles), qtRoles)
+
+	for _, createdRole := range createdRoles {
+		index := slices.IndexFunc(roles, func(role model.Role) bool {
+			return role.Name == createdRole.Name
+		})
+		assert.GreaterOrEqual(t, index, 0)
+
+		createdRole.DeletedBy = id
+		createdRole.DeletedAt = time.Now()
+
+		checkRole(t, createdRole, roles[index])
 	}
 
 	t.Run("WrongDB", func(t *testing.T) {

@@ -9,6 +9,7 @@ import (
 	"github.com/thiago-felipe-99/autenticacao/data"
 	"github.com/thiago-felipe-99/autenticacao/errs"
 	"github.com/thiago-felipe-99/autenticacao/model"
+	"golang.org/x/exp/slices"
 )
 
 func createRole() model.Role {
@@ -180,5 +181,54 @@ func TestRoleExist(t *testing.T) {
 		found, err = role.Exist(append(roles, gofakeit.Name()))
 		assert.NoError(t, err)
 		assert.False(t, found)
+	})
+}
+
+func TestRoleGetAll(t *testing.T) {
+	t.Parallel()
+
+	qtRoles := 100
+	createRoles := make([]model.Role, 0, qtRoles)
+	rolesName := make([]string, 0, qtRoles)
+
+	role := data.NewRoleSQL(createTempDB(t, "data_role_get_all"))
+
+	roles, err := role.GetAll(0, qtRoles)
+	assert.NoError(t, err)
+	assert.Equal(t, roles, []model.Role{})
+
+	for i := 0; i < qtRoles; i++ {
+		tempRole := createRole()
+		createRoles = append(createRoles, tempRole)
+
+		err := role.Create(tempRole)
+		assert.NoError(t, err)
+	}
+
+	roles, err = role.GetAll(0, qtRoles)
+	assert.NoError(t, err)
+	assert.Equal(t, len(roles), qtRoles)
+
+	id := model.NewID()
+
+	for _, roleDB := range roles {
+		rolesName = append(rolesName, roleDB.Name)
+
+		err := role.Delete(roleDB.Name, time.Now(), id)
+		assert.NoError(t, err)
+	}
+
+	for _, createRole := range createRoles {
+		assert.True(t, slices.Contains(rolesName, createRole.Name))
+	}
+
+	t.Run("WrongDB", func(t *testing.T) {
+		t.Parallel()
+
+		role := data.NewRoleSQL(createWrongDB(t))
+
+		roles, err := role.GetAll(0, qtRoles)
+		assert.ErrorContains(t, err, "no such host")
+		assert.Nil(t, roles)
 	})
 }

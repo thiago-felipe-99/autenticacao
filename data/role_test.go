@@ -18,7 +18,7 @@ func createRole() model.Role {
 		CreatedAt: time.Now(),
 		CreatedBy: model.NewID(),
 		DeletedAt: time.Time{},
-		DeletedBy: model.NewID(),
+		DeletedBy: model.ID{},
 	}
 }
 
@@ -33,9 +33,7 @@ func TestRoleCreate(t *testing.T) {
 		t.Run("ValidInputs", func(t *testing.T) {
 			t.Parallel()
 
-			tempRole := createRole()
-
-			err := role.Create(tempRole)
+			err := role.Create(createRole())
 			assert.NoError(t, err)
 		})
 	}

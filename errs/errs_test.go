@@ -1,1 +1,1 @@
-package errs
+package errs_test

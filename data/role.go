@@ -64,14 +64,15 @@ func (r *RoleSQL) Exist(roles []string) (bool, error) {
 		&count,
 		`SELECT COUNT(i) FROM unnest($1::text[]) i
 		LEFT JOIN role r ON i = r.name
-		WHERE r.name IS NULL;`,
+		WHERE r.deleted_at = $2`,
 		pq.StringArray(roles),
+		time.Time{},
 	)
 	if err != nil {
 		return false, fmt.Errorf("error verifying if roles exist: %w", err)
 	}
 
-	return count == 0, nil
+	return count == len(roles), nil
 }
 
 func (r *RoleSQL) Create(role model.Role) error {

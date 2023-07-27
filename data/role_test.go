@@ -103,7 +103,7 @@ func TestRoleExist(t *testing.T) {
 	role := data.NewRoleSQL(createTempDB(t, "data_role_exist"))
 
 	for i := 0; i < qtRoles; i++ {
-		t.Run("InvalidInput", func(t *testing.T) {
+		t.Run("ValidInput", func(t *testing.T) {
 			t.Parallel()
 
 			tempRole := createRole()
@@ -230,5 +230,79 @@ func TestRoleGetAll(t *testing.T) {
 		roles, err := role.GetAll(0, qtRoles)
 		assert.ErrorContains(t, err, "no such host")
 		assert.Nil(t, roles)
+	})
+}
+
+func TestRoleDelete(t *testing.T) {
+	t.Parallel()
+
+	qtRoles := 100
+
+	role := data.NewRoleSQL(createTempDB(t, "data_role_delete"))
+
+	for i := 0; i < qtRoles; i++ {
+		t.Run("ValidNames", func(t *testing.T) {
+			t.Parallel()
+
+			tempRole := createRole()
+
+			err := role.Create(tempRole)
+			assert.NoError(t, err)
+
+			err = role.Delete(tempRole.Name, time.Now(), model.NewID())
+			assert.NoError(t, err)
+
+			foundRole, err := role.GetByName(tempRole.Name)
+			assert.ErrorIs(t, err, errs.ErrRoleNotFound)
+			assert.Nil(t, foundRole)
+
+			found, err := role.Exist([]string{tempRole.Name})
+			assert.NoError(t, err)
+			assert.False(t, found)
+		})
+	}
+
+	t.Run("InvalidName", func(t *testing.T) {
+		t.Parallel()
+
+		err := role.Delete(gofakeit.Name(), time.Now(), model.NewID())
+		assert.NoError(t, err)
+	})
+
+	t.Run("WrongDB", func(t *testing.T) {
+		t.Parallel()
+
+		role := data.NewRoleSQL(createWrongDB(t))
+
+		err := role.Delete(gofakeit.Name(), time.Now(), model.NewID())
+		assert.ErrorContains(t, err, "no such host")
+	})
+
+	t.Run("TableRoleDoesNotExist", func(t *testing.T) {
+		t.Parallel()
+
+		db := createTempDB(t, "data_role_delete_no_role")
+		role := data.NewRoleSQL(db)
+
+		_, err := db.Exec("DROP TABLE role")
+		assert.NoError(t, err)
+
+		err = role.Delete(gofakeit.Name(), time.Now(), model.NewID())
+		assert.ErrorContains(t, err, "relation \"role\" does not exist")
+	})
+
+	t.Run("TableUsersDoesNotExist", func(t *testing.T) {
+		t.Parallel()
+
+		db := createTempDB(t, "data_role_delete_no_role")
+		role := data.NewRoleSQL(db)
+
+		_, err := db.Exec(
+			"DROP TABLE users_sessions_created; DROP TABLE users_sessions_deleted; DROP TABLE users",
+		)
+		assert.NoError(t, err)
+
+		err = role.Delete(gofakeit.Name(), time.Now(), model.NewID())
+		assert.ErrorContains(t, err, "relation \"users\" does not exist")
 	})
 }

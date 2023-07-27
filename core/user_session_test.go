@@ -388,7 +388,7 @@ func TestUserSessionGetAll(t *testing.T) {
 		userSessionRedis,
 		user,
 		validator.New(),
-		time.Second,
+		time.Second*10,
 	)
 
 	err := userSessionRedis.ConsumeQueues(time.Second, buffer/2)
@@ -403,21 +403,21 @@ func TestUserSessionGetAll(t *testing.T) {
 	}
 
 	qtUsers := overflowBuffer
-	usersTemp := make([]model.ID, qtUsers)
+	usersID := make([]model.ID, 0, qtUsers)
+	usersSessionsID := make([]model.ID, 0, qtUsers)
 
 	for i := 0; i < qtUsers; i++ {
-		userid, _, userTemp := createTempUser(t, user, db, rolesTemp)
-		usersTemp[i] = userid
+		userID, _, userTemp := createTempUser(t, user, db, rolesTemp)
+		usersID = append(usersID, userID)
 		UserSessionPartial := model.UserSessionPartial{ //nolint:exhaustruct
 			Username: userTemp.Username,
 			Password: userTemp.Password,
 		}
 
-		userSessionTemp1, err := userSession.Create(UserSessionPartial)
+		userSessionTemp, err := userSession.Create(UserSessionPartial)
 		assert.NoError(t, err)
 
-		_, err = userSession.Delete(userSessionTemp1.ID)
-		assert.NoError(t, err)
+		usersSessionsID = append(usersSessionsID, userSessionTemp.ID)
 	}
 
 	time.Sleep(time.Second)
@@ -426,7 +426,141 @@ func TestUserSessionGetAll(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, qtUsers, len(usersSessionsDB))
 
-	for _, userSessionDB := range usersSessionsDB {
-		assert.True(t, slices.Contains(usersTemp, userSessionDB.UserID))
+	usersIDDB := make([]model.ID, 0, qtUsers)
+	idDB := make([]model.ID, 0, qtUsers)
+
+	for _, userSessionTemp := range usersSessionsDB {
+		usersIDDB = append(usersIDDB, userSessionTemp.UserID)
+		idDB = append(idDB, userSessionTemp.ID)
+	}
+
+	for _, userID := range usersID {
+		assert.True(t, slices.Contains(usersIDDB, userID))
+	}
+
+	for _, id := range usersSessionsID {
+		assert.True(t, slices.Contains(idDB, id))
+
+		_, err := userSession.Delete(id)
+		assert.NoError(t, err)
+	}
+
+	time.Sleep(time.Second)
+
+	usersSessionsDB, err = userSession.GetAll(0, qtUsers)
+	assert.NoError(t, err)
+	assert.Equal(t, qtUsers, len(usersSessionsDB))
+
+	usersIDDB = make([]model.ID, 0, qtUsers)
+	idDB = make([]model.ID, 0, qtUsers)
+
+	for _, userSessionTemp := range usersSessionsDB {
+		usersIDDB = append(usersIDDB, userSessionTemp.UserID)
+		idDB = append(idDB, userSessionTemp.ID)
+	}
+
+	for _, userID := range usersID {
+		assert.True(t, slices.Contains(usersIDDB, userID))
+	}
+
+	for _, id := range usersSessionsID {
+		assert.True(t, slices.Contains(idDB, id))
+	}
+}
+
+func TestUserSessionGetByID(t *testing.T) {
+	t.Parallel()
+
+	db := createTempDB(t, "user_session_get_all")
+	redisClient := redis.NewClient(&redis.Options{ //nolint:exhaustruct
+		Addr:     "localhost:6379",
+		Password: "qt4BLAnrrNSZp2ssRMkLzZjnaZQkcL22",
+		DB:       0,
+	})
+	buffer := 30
+	overflowBuffer := buffer * 10
+
+	role := core.NewRole(data.NewRoleSQL(db), validator.New())
+	user := core.NewUser(data.NewUserSQL(db), role, validator.New(), false)
+	userSessionRedis := data.NewUserSessionRedis(redisClient, db, buffer)
+	userSession := core.NewUserSession(
+		userSessionRedis,
+		user,
+		validator.New(),
+		time.Second*10,
+	)
+
+	err := userSessionRedis.ConsumeQueues(time.Second, buffer/2)
+	assert.NoError(t, err)
+
+	qtRoles := 5
+	rolesTemp := make([]string, qtRoles)
+
+	for i := range rolesTemp {
+		_, role := createTempRole(t, role, db)
+		rolesTemp[i] = role.Name
+	}
+
+	qtUserSessions := overflowBuffer
+	userSessionsID := make([]model.ID, 0, qtUserSessions)
+
+	userID, _, userTemp := createTempUser(t, user, db, rolesTemp)
+	UserSessionPartial := model.UserSessionPartial{ //nolint:exhaustruct
+		Username: userTemp.Username,
+		Password: userTemp.Password,
+	}
+
+	for i := 0; i < qtUserSessions; i++ {
+		userSessionTemp, err := userSession.Create(UserSessionPartial)
+		assert.NoError(t, err)
+
+		userSessionsID = append(userSessionsID, userSessionTemp.ID)
+	}
+
+	time.Sleep(time.Second)
+
+	usersSessionsDB, err := userSession.GetByUserID(userID, 0, qtUserSessions)
+	assert.NoError(t, err)
+	assert.Equal(t, qtUserSessions, len(usersSessionsDB))
+
+	usersIDDB := make([]model.ID, 0, qtUserSessions)
+	idDB := make([]model.ID, 0, qtUserSessions)
+
+	for _, userSessionTemp := range usersSessionsDB {
+		usersIDDB = append(usersIDDB, userSessionTemp.UserID)
+		idDB = append(idDB, userSessionTemp.ID)
+	}
+
+	for _, userIDDB := range usersIDDB {
+		assert.Equal(t, userIDDB, userID)
+	}
+
+	for _, id := range userSessionsID {
+		assert.True(t, slices.Contains(idDB, id))
+
+		_, err := userSession.Delete(id)
+		assert.NoError(t, err)
+	}
+
+	time.Sleep(time.Second)
+
+	usersSessionsDB, err = userSession.GetByUserID(userID, 0, qtUserSessions)
+	assert.NoError(t, err)
+	assert.Equal(t, qtUserSessions, len(usersSessionsDB))
+
+	usersIDDB = make([]model.ID, 0, qtUserSessions)
+	idDB = make([]model.ID, 0, qtUserSessions)
+
+	for _, userSessionTemp := range usersSessionsDB {
+		usersIDDB = append(usersIDDB, userSessionTemp.UserID)
+		idDB = append(idDB, userSessionTemp.ID)
+	}
+
+	for _, userIDDB := range usersIDDB {
+		assert.Equal(t, userIDDB, userID)
+	}
+
+	for _, id := range userSessionsID {
+		assert.True(t, slices.Contains(idDB, id))
 	}
 }

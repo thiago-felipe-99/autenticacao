@@ -12,6 +12,7 @@ import (
 	"github.com/thiago-felipe-99/autenticacao/data"
 	"github.com/thiago-felipe-99/autenticacao/errs"
 	"github.com/thiago-felipe-99/autenticacao/model"
+	"golang.org/x/exp/slices"
 )
 
 func TestUserSessionCreate(t *testing.T) { //nolint:funlen
@@ -213,7 +214,7 @@ func TestUserSessionCreate(t *testing.T) { //nolint:funlen
 func TestUserSessionRefresh(t *testing.T) {
 	t.Parallel()
 
-	db := createTempDB(t, "user_session_create")
+	db := createTempDB(t, "user_session_refresh")
 	redisClient := redis.NewClient(&redis.Options{ //nolint:exhaustruct
 		Addr:     "localhost:6379",
 		Password: "qt4BLAnrrNSZp2ssRMkLzZjnaZQkcL22",
@@ -292,7 +293,7 @@ func TestUserSessionRefresh(t *testing.T) {
 func TestUserSessionDelete(t *testing.T) {
 	t.Parallel()
 
-	db := createTempDB(t, "user_session_create")
+	db := createTempDB(t, "user_session_delete")
 	redisClient := redis.NewClient(&redis.Options{ //nolint:exhaustruct
 		Addr:     "localhost:6379",
 		Password: "qt4BLAnrrNSZp2ssRMkLzZjnaZQkcL22",
@@ -365,5 +366,67 @@ func TestUserSessionDelete(t *testing.T) {
 			assert.Nil(t, userSessionTemp)
 			assert.ErrorIs(t, err, errs.ErrUserSessionNotFoud)
 		})
+	}
+}
+
+func TestUserSessionGetAll(t *testing.T) {
+	t.Parallel()
+
+	db := createTempDB(t, "user_session_get_all")
+	redisClient := redis.NewClient(&redis.Options{ //nolint:exhaustruct
+		Addr:     "localhost:6379",
+		Password: "qt4BLAnrrNSZp2ssRMkLzZjnaZQkcL22",
+		DB:       0,
+	})
+	buffer := 30
+	overflowBuffer := buffer * 10
+
+	role := core.NewRole(data.NewRoleSQL(db), validator.New())
+	user := core.NewUser(data.NewUserSQL(db), role, validator.New(), false)
+	userSessionRedis := data.NewUserSessionRedis(redisClient, db, buffer)
+	userSession := core.NewUserSession(
+		userSessionRedis,
+		user,
+		validator.New(),
+		time.Second,
+	)
+
+	err := userSessionRedis.ConsumeQueues(time.Second, buffer/2)
+	assert.NoError(t, err)
+
+	qtRoles := 5
+	rolesTemp := make([]string, qtRoles)
+
+	for i := range rolesTemp {
+		_, role := createTempRole(t, role, db)
+		rolesTemp[i] = role.Name
+	}
+
+	qtUsers := overflowBuffer
+	usersTemp := make([]model.ID, qtUsers)
+
+	for i := 0; i < qtUsers; i++ {
+		userid, _, userTemp := createTempUser(t, user, db, rolesTemp)
+		usersTemp[i] = userid
+		UserSessionPartial := model.UserSessionPartial{ //nolint:exhaustruct
+			Username: userTemp.Username,
+			Password: userTemp.Password,
+		}
+
+		userSessionTemp1, err := userSession.Create(UserSessionPartial)
+		assert.NoError(t, err)
+
+		_, err = userSession.Delete(userSessionTemp1.ID)
+		assert.NoError(t, err)
+	}
+
+	time.Sleep(time.Second)
+
+	usersSessionsDB, err := userSession.GetAll(0, qtUsers)
+	assert.NoError(t, err)
+	assert.Equal(t, qtUsers, len(usersSessionsDB))
+
+	for _, userSessionDB := range usersSessionsDB {
+		assert.True(t, slices.Contains(usersTemp, userSessionDB.UserID))
 	}
 }

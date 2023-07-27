@@ -121,7 +121,7 @@ func (u *UserSessionRedis) consumeChan(
 	usersSessions := make([]model.UserSession, 0, max)
 
 	query := fmt.Sprintf(
-		"INSERT INTO %s (id, userid, created_at, created_by) VALUES (:id, :userid, :created_at, :created_by)",
+		"INSERT INTO %s (id, userid, created_at, deleted_at) VALUES (:id, :userid, :created_at, :deleted_at)",
 		table,
 	)
 
@@ -146,7 +146,9 @@ func (u *UserSessionRedis) consumeChan(
 			}
 
 		case <-ticker.C:
-			saveDatabase()
+			if len(usersSessions) > 0 {
+				saveDatabase()
+			}
 		}
 	}
 }

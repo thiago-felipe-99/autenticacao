@@ -26,7 +26,7 @@ func TestRoleCreate(t *testing.T) {
 
 	qtRoles := 100
 
-	role := data.NewRoleSQL(createTempDB(t, "data_create_role"))
+	role := data.NewRoleSQL(createTempDB(t, "data_role_create"))
 
 	for i := 0; i < qtRoles; i++ {
 		t.Run("ValidInputs", func(t *testing.T) {
@@ -54,7 +54,7 @@ func TestRoleGetByName(t *testing.T) {
 
 	qtRoles := 100
 
-	role := data.NewRoleSQL(createTempDB(t, "data_get_role"))
+	role := data.NewRoleSQL(createTempDB(t, "data_role_get_by_name"))
 
 	for i := 0; i < qtRoles; i++ {
 		t.Run("InvalidInput", func(t *testing.T) {
@@ -91,5 +91,94 @@ func TestRoleGetByName(t *testing.T) {
 		found, err := role.GetByName("invalid-role")
 		assert.ErrorIs(t, err, errs.ErrRoleNotFound)
 		assert.Nil(t, found)
+	})
+}
+
+func TestRoleExist(t *testing.T) {
+	t.Parallel()
+
+	qtRoles := 100
+
+	role := data.NewRoleSQL(createTempDB(t, "data_role_exist"))
+
+	for i := 0; i < qtRoles; i++ {
+		t.Run("InvalidInput", func(t *testing.T) {
+			t.Parallel()
+
+			tempRole := createRole()
+
+			err := role.Create(tempRole)
+			assert.NoError(t, err)
+
+			found, err := role.Exist([]string{tempRole.Name})
+			assert.NoError(t, err)
+			assert.True(t, found)
+		})
+	}
+
+	t.Run("WrongDB", func(t *testing.T) {
+		t.Parallel()
+
+		role := data.NewRoleSQL(createWrongDB(t))
+
+		found, err := role.Exist([]string{"invalid-role"})
+		assert.ErrorContains(t, err, "no such host")
+		assert.False(t, found)
+	})
+
+	t.Run("NotFound", func(t *testing.T) {
+		t.Parallel()
+
+		found, err := role.Exist([]string{"invalid-role"})
+		assert.NoError(t, err)
+		assert.False(t, found)
+	})
+
+	t.Run("Multiples", func(t *testing.T) {
+		t.Parallel()
+
+		qtRoles := gofakeit.Number(10, 100)
+		roles := make([]string, 0, qtRoles)
+
+		for i := 0; i < qtRoles; i++ {
+			tempRole := createRole()
+
+			err := role.Create(tempRole)
+			assert.NoError(t, err)
+
+			roles = append(roles, tempRole.Name)
+		}
+
+		found, err := role.Exist(roles)
+		assert.NoError(t, err)
+		assert.True(t, found)
+	})
+
+	t.Run("MultiplesNotFound", func(t *testing.T) {
+		t.Parallel()
+
+		qtRoles := gofakeit.Number(10, 100)
+		roles := make([]string, 0, qtRoles)
+
+		for i := 0; i < qtRoles; i++ {
+			tempRole := createRole()
+
+			err := role.Create(tempRole)
+			assert.NoError(t, err)
+
+			roles = append(roles, tempRole.Name)
+		}
+
+		found, err := role.Exist(append(roles, gofakeit.Name()))
+		assert.NoError(t, err)
+		assert.False(t, found)
+
+		for i := 0; i < gofakeit.Number(10, 100); i++ {
+			roles = append(roles, gofakeit.Name())
+		}
+
+		found, err = role.Exist(append(roles, gofakeit.Name()))
+		assert.NoError(t, err)
+		assert.False(t, found)
 	})
 }

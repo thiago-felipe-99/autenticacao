@@ -93,8 +93,8 @@ type User struct {
 	DeletedBy ID        `json:"deletedBy,omitempty"`
 }
 
-func (u *User) Postgres() *UserPostgres {
-	return &UserPostgres{
+func (u *User) Postgres() UserPostgres {
+	return UserPostgres{
 		ID:        u.ID,
 		Name:      u.Name,
 		Username:  u.Username,
@@ -128,8 +128,8 @@ type UserPostgres struct {
 	DeletedBy ID             `db:"deleted_by"`
 }
 
-func (u *UserPostgres) User() *User {
-	return &User{
+func (u *UserPostgres) User() User {
+	return User{
 		ID:        u.ID,
 		Name:      u.Name,
 		Username:  u.Username,
@@ -157,4 +157,7 @@ type UserSession struct {
 	DeletedAt time.Time `json:"deletedAt,omitempty" db:"deleted_at"`
 }
 
-var EmptyUserSession = UserSession{} //nolint:exhaustruct,gochecknoglobals
+var (
+	EmptyUserSession  = UserSession{}   //nolint:exhaustruct,gochecknoglobals
+	EmptyUserSessions = []UserSession{} //nolint:gochecknoglobals
+)

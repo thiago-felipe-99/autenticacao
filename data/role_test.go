@@ -76,7 +76,7 @@ func TestRoleGetByName(t *testing.T) {
 
 			found, err := role.GetByName(tempRole.Name)
 			require.NoError(t, err)
-			checkRole(t, tempRole, *found)
+			checkRole(t, tempRole, found)
 		})
 	}
 
@@ -87,7 +87,7 @@ func TestRoleGetByName(t *testing.T) {
 
 		found, err := role.GetByName("invalid-role")
 		require.ErrorContains(t, err, "no such host")
-		require.Nil(t, found)
+		require.Equal(t, found, model.EmptyRole)
 	})
 
 	t.Run("NotFound", func(t *testing.T) {
@@ -95,7 +95,7 @@ func TestRoleGetByName(t *testing.T) {
 
 		found, err := role.GetByName("invalid-role")
 		require.ErrorIs(t, err, errs.ErrRoleNotFound)
-		require.Nil(t, found)
+		require.Equal(t, found, model.EmptyRole)
 	})
 }
 
@@ -248,7 +248,7 @@ func TestRoleGetAll(t *testing.T) { //nolint:dupl
 
 		roles, err := role.GetAll(0, qtRoles)
 		require.ErrorContains(t, err, "no such host")
-		require.Nil(t, roles)
+		require.Equal(t, roles, model.EmptyRoles)
 	})
 }
 
@@ -273,7 +273,7 @@ func TestRoleDelete(t *testing.T) {
 
 			foundRole, err := role.GetByName(tempRole.Name)
 			require.ErrorIs(t, err, errs.ErrRoleNotFound)
-			require.Nil(t, foundRole)
+			require.Equal(t, foundRole, model.EmptyRole)
 
 			found, err := role.Exist([]string{tempRole.Name})
 			require.NoError(t, err)

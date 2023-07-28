@@ -16,7 +16,7 @@ type RoleSQL struct {
 	database *sqlx.DB
 }
 
-func (r *RoleSQL) GetByName(name string) (*model.Role, error) {
+func (r *RoleSQL) GetByName(name string) (model.Role, error) {
 	role := model.Role{} //nolint: exhaustruct
 
 	err := r.database.Get(
@@ -29,13 +29,13 @@ func (r *RoleSQL) GetByName(name string) (*model.Role, error) {
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errs.ErrRoleNotFound
+			return model.EmptyRole, errs.ErrRoleNotFound
 		}
 
-		return nil, fmt.Errorf("error get role by name in database: %w", err)
+		return model.EmptyRole, fmt.Errorf("error get role by name in database: %w", err)
 	}
 
-	return &role, nil
+	return role, nil
 }
 
 func (r *RoleSQL) GetAll(paginate int, qt int) ([]model.Role, error) {
@@ -51,7 +51,7 @@ func (r *RoleSQL) GetAll(paginate int, qt int) ([]model.Role, error) {
 		qt*paginate,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("error get roles in database: %w", err)
+		return model.EmptyRoles, fmt.Errorf("error get roles in database: %w", err)
 	}
 
 	return role, nil

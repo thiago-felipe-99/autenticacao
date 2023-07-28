@@ -30,10 +30,10 @@ type UserSessionRedis struct {
 }
 
 func (u *UserSessionRedis) GetAll(paginate int, qt int) ([]model.UserSession, error) {
-	role := []model.UserSession{}
+	userSessions := []model.UserSession{}
 
 	err := u.database.Select(
-		&role,
+		&userSessions,
 		`SELECT id, userid, created_at, deleted_at
 		FROM users_sessions_created 
 		LIMIT $1 
@@ -42,10 +42,10 @@ func (u *UserSessionRedis) GetAll(paginate int, qt int) ([]model.UserSession, er
 		qt*paginate,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("error get user sessions in database: %w", err)
+		return model.EmptyUserSessions, fmt.Errorf("error get user sessions in database: %w", err)
 	}
 
-	return role, nil
+	return userSessions, nil
 }
 
 func (u *UserSessionRedis) GetByUserID(
@@ -53,10 +53,10 @@ func (u *UserSessionRedis) GetByUserID(
 	paginate int,
 	qt int,
 ) ([]model.UserSession, error) {
-	role := []model.UserSession{}
+	userSessions := []model.UserSession{}
 
 	err := u.database.Select(
-		&role,
+		&userSessions,
 		`SELECT id, userid, created_at, deleted_at
 		FROM users_sessions_created 
 		WHERE userid = $1
@@ -67,49 +67,49 @@ func (u *UserSessionRedis) GetByUserID(
 		qt*paginate,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("error get user sessions in database: %w", err)
+		return model.EmptyUserSessions, fmt.Errorf("error get user sessions in database: %w", err)
 	}
 
-	return role, nil
+	return userSessions, nil
 }
 
-func (u *UserSessionRedis) Create(user model.UserSession, expires time.Duration) error {
-	serial, err := msgpack.Marshal(&user)
+func (u *UserSessionRedis) Create(userSession model.UserSession, expires time.Duration) error {
+	serial, err := msgpack.Marshal(&userSession)
 	if err != nil {
 		return fmt.Errorf("error marshaling user session: %w", err)
 	}
 
-	_, err = u.redis.Set(context.Background(), user.ID.String(), serial, expires).Result()
+	_, err = u.redis.Set(context.Background(), userSession.ID.String(), serial, expires).Result()
 	if err != nil {
 		return fmt.Errorf("error setting user session in redis: %w", err)
 	}
 
-	u.created <- user
+	u.created <- userSession
 
 	return nil
 }
 
-func (u *UserSessionRedis) Delete(id model.ID, deletetAd time.Time) (*model.UserSession, error) {
+func (u *UserSessionRedis) Delete(id model.ID, deletetAd time.Time) (model.UserSession, error) {
 	serial, err := u.redis.GetDel(context.Background(), id.String()).Bytes()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
-			return nil, errs.ErrUserSessionNotFoud
+			return model.EmptyUserSession, errs.ErrUserSessionNotFoud
 		}
 
-		return nil, fmt.Errorf("error getting user session from redis: %w", err)
+		return model.EmptyUserSession, fmt.Errorf("error getting user session from redis: %w", err)
 	}
 
 	var userSession model.UserSession
 
 	err = msgpack.Unmarshal(serial, &userSession)
 	if err != nil {
-		return nil, fmt.Errorf("error unmarshaling user session: %w", err)
+		return model.EmptyUserSession, fmt.Errorf("error unmarshaling user session: %w", err)
 	}
 
 	userSession.DeletedAt = deletetAd
 	u.deleted <- userSession
 
-	return &userSession, nil
+	return userSession, nil
 }
 
 func (u *UserSessionRedis) consumeChan(

@@ -99,15 +99,15 @@ func TestGetBy(t *testing.T) {
 
 			found, err := user.GetByID(tempUser.ID)
 			require.NoError(t, err)
-			checkUser(t, tempUser, *found)
+			checkUser(t, tempUser, found)
 
 			found, err = user.GetByUsername(tempUser.Username)
 			require.NoError(t, err)
-			checkUser(t, tempUser, *found)
+			checkUser(t, tempUser, found)
 
 			found, err = user.GetByEmail(tempUser.Email)
 			require.NoError(t, err)
-			checkUser(t, tempUser, *found)
+			checkUser(t, tempUser, found)
 		})
 	}
 
@@ -118,15 +118,15 @@ func TestGetBy(t *testing.T) {
 
 		found, err := user.GetByID(model.NewID())
 		require.ErrorContains(t, err, "no such host")
-		require.Nil(t, found)
+		require.Equal(t, found, model.EmptyUser)
 
 		found, err = user.GetByUsername("invalid-username")
 		require.ErrorContains(t, err, "no such host")
-		require.Nil(t, found)
+		require.Equal(t, found, model.EmptyUser)
 
 		found, err = user.GetByEmail("invalid-email")
 		require.ErrorContains(t, err, "no such host")
-		require.Nil(t, found)
+		require.Equal(t, found, model.EmptyUser)
 	})
 
 	t.Run("NotFound", func(t *testing.T) {
@@ -134,15 +134,15 @@ func TestGetBy(t *testing.T) {
 
 		found, err := user.GetByID(model.NewID())
 		require.ErrorIs(t, err, errs.ErrUserNotFound)
-		require.Nil(t, found)
+		require.Equal(t, found, model.EmptyUser)
 
 		found, err = user.GetByUsername(gofakeit.Username())
 		require.ErrorIs(t, err, errs.ErrUserNotFound)
-		require.Nil(t, found)
+		require.Equal(t, found, model.EmptyUser)
 
 		found, err = user.GetByEmail(gofakeit.Email())
 		require.ErrorIs(t, err, errs.ErrUserNotFound)
-		require.Nil(t, found)
+		require.Equal(t, found, model.EmptyUser)
 	})
 }
 
@@ -206,7 +206,7 @@ func TestUserGetAll(t *testing.T) { //nolint:dupl
 
 		roles, err := user.GetAll(0, qtUsers)
 		require.ErrorContains(t, err, "no such host")
-		require.Nil(t, roles)
+		require.Equal(t, roles, model.EmptyUsers)
 	})
 }
 
@@ -277,7 +277,7 @@ func TestUserGetByRoles(t *testing.T) {
 
 		roles, err := user.GetByRoles(roles, 0, qtUsers)
 		require.ErrorContains(t, err, "no such host")
-		require.Nil(t, roles)
+		require.Equal(t, roles, model.EmptyUsers)
 	})
 }
 
@@ -300,17 +300,17 @@ func TestUserDelete(t *testing.T) {
 			err = user.Delete(tempUser.ID, time.Now(), model.NewID())
 			require.NoError(t, err)
 
-			foundRole, err := user.GetByID(tempUser.ID)
+			found, err := user.GetByID(tempUser.ID)
 			require.ErrorIs(t, err, errs.ErrUserNotFound)
-			require.Nil(t, foundRole)
+			require.Equal(t, found, model.EmptyUser)
 
-			foundRole, err = user.GetByUsername(tempUser.Username)
+			found, err = user.GetByUsername(tempUser.Username)
 			require.ErrorIs(t, err, errs.ErrUserNotFound)
-			require.Nil(t, foundRole)
+			require.Equal(t, found, model.EmptyUser)
 
-			foundRole, err = user.GetByEmail(tempUser.Email)
+			found, err = user.GetByEmail(tempUser.Email)
 			require.ErrorIs(t, err, errs.ErrUserNotFound)
-			require.Nil(t, foundRole)
+			require.Equal(t, found, model.EmptyUser)
 		})
 	}
 
@@ -373,15 +373,15 @@ func TestUserUpdate(t *testing.T) {
 
 			foundRole, err := user.GetByID(tempUser.ID)
 			require.NoError(t, err)
-			checkUser(t, tempUser, *foundRole)
+			checkUser(t, tempUser, foundRole)
 
 			foundRole, err = user.GetByUsername(tempUser.Username)
 			require.NoError(t, err)
-			checkUser(t, tempUser, *foundRole)
+			checkUser(t, tempUser, foundRole)
 
 			foundRole, err = user.GetByEmail(tempUser.Email)
 			require.NoError(t, err)
-			checkUser(t, tempUser, *foundRole)
+			checkUser(t, tempUser, foundRole)
 		})
 	}
 

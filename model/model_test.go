@@ -68,7 +68,7 @@ func TestID(t *testing.T) {
 func TestUser(t *testing.T) {
 	t.Parallel()
 
-	user := &model.User{
+	user := model.User{
 		ID:        model.NewID(),
 		Name:      gofakeit.Name(),
 		Username:  gofakeit.Username(),
@@ -82,7 +82,7 @@ func TestUser(t *testing.T) {
 		DeletedBy: model.NewID(),
 	}
 
-	postgres := &model.UserPostgres{
+	postgres := model.UserPostgres{
 		ID:        user.ID,
 		Name:      user.Name,
 		Username:  user.Username,

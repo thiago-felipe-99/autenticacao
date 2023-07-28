@@ -92,7 +92,7 @@ func (u *UserSession) Delete(id model.ID) (model.UserSession, error) {
 		return model.EmptyUserSession, fmt.Errorf("error deleting user session from database: %w", err)
 	}
 
-	return *userSession, nil
+	return userSession, nil
 }
 
 func (u *UserSession) Refresh(id model.ID) (model.UserSession, error) {

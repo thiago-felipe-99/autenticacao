@@ -32,7 +32,7 @@ func (u *User) GetByID(id model.ID) (model.User, error) {
 		return model.EmptyUser, fmt.Errorf("error on getting user from database: %w", err)
 	}
 
-	return *user, nil
+	return user, nil
 }
 
 func (u *User) GetByUsername(username string) (model.User, error) {
@@ -45,7 +45,7 @@ func (u *User) GetByUsername(username string) (model.User, error) {
 		return model.EmptyUser, fmt.Errorf("error on getting user from database: %w", err)
 	}
 
-	return *user, nil
+	return user, nil
 }
 
 func (u *User) GetByEmail(email string) (model.User, error) {
@@ -58,7 +58,7 @@ func (u *User) GetByEmail(email string) (model.User, error) {
 		return model.EmptyUser, fmt.Errorf("error on getting user from database: %w", err)
 	}
 
-	return *user, nil
+	return user, nil
 }
 
 func (u *User) GetAll(paginate int, qt int) ([]model.User, error) {

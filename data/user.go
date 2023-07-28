@@ -16,7 +16,7 @@ type UserSQL struct {
 	database *sqlx.DB
 }
 
-func (u *UserSQL) GetByID(id model.ID) (*model.User, error) {
+func (u *UserSQL) GetByID(id model.ID) (model.User, error) {
 	user := model.UserPostgres{} //nolint: exhaustruct
 
 	err := u.database.Get(
@@ -30,16 +30,16 @@ func (u *UserSQL) GetByID(id model.ID) (*model.User, error) {
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errs.ErrUserNotFound
+			return model.EmptyUser, errs.ErrUserNotFound
 		}
 
-		return nil, fmt.Errorf("error get user by id in database: %w", err)
+		return model.EmptyUser, fmt.Errorf("error get user by id in database: %w", err)
 	}
 
 	return user.User(), nil
 }
 
-func (u *UserSQL) GetByUsername(username string) (*model.User, error) {
+func (u *UserSQL) GetByUsername(username string) (model.User, error) {
 	user := model.UserPostgres{} //nolint: exhaustruct
 
 	err := u.database.Get(
@@ -53,16 +53,16 @@ func (u *UserSQL) GetByUsername(username string) (*model.User, error) {
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errs.ErrUserNotFound
+			return model.EmptyUser, errs.ErrUserNotFound
 		}
 
-		return nil, fmt.Errorf("error get user by username in database: %w", err)
+		return model.EmptyUser, fmt.Errorf("error get user by username in database: %w", err)
 	}
 
 	return user.User(), nil
 }
 
-func (u *UserSQL) GetByEmail(email string) (*model.User, error) {
+func (u *UserSQL) GetByEmail(email string) (model.User, error) {
 	user := model.UserPostgres{} //nolint: exhaustruct
 
 	err := u.database.Get(
@@ -76,10 +76,10 @@ func (u *UserSQL) GetByEmail(email string) (*model.User, error) {
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errs.ErrUserNotFound
+			return model.EmptyUser, errs.ErrUserNotFound
 		}
 
-		return nil, fmt.Errorf("error get user by email in database: %w", err)
+		return model.EmptyUser, fmt.Errorf("error get user by email in database: %w", err)
 	}
 
 	return user.User(), nil
@@ -99,12 +99,12 @@ func (u *UserSQL) GetAll(paginate int, qt int) ([]model.User, error) {
 		qt*paginate,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("error get users in database: %w", err)
+		return model.EmptyUsers, fmt.Errorf("error get users in database: %w", err)
 	}
 
 	users := make([]model.User, 0, len(partial))
 	for _, user := range partial {
-		users = append(users, *user.User())
+		users = append(users, user.User())
 	}
 
 	return users, nil
@@ -126,12 +126,12 @@ func (u *UserSQL) GetByRoles(roles []string, paginate int, qt int) ([]model.User
 		qt*paginate,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("error get users by role in database: %w", err)
+		return model.EmptyUsers, fmt.Errorf("error get users by role in database: %w", err)
 	}
 
 	users := make([]model.User, 0, len(partial))
 	for _, user := range partial {
-		users = append(users, *user.User())
+		users = append(users, user.User())
 	}
 
 	return users, nil

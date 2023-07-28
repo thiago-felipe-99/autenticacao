@@ -177,7 +177,7 @@ func TestRoleDelete(t *testing.T) {
 
 			found, err := role.GetByName(roleTmp)
 			require.ErrorIs(t, err, errs.ErrRoleNotFound)
-			require.Nil(t, found)
+			require.Equal(t, found, model.EmptyRole)
 		})
 	}
 

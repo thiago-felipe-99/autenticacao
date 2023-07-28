@@ -16,14 +16,14 @@ type Role struct {
 	validate *validator.Validate
 }
 
-func (r *Role) GetByName(name string) (*model.Role, error) {
+func (r *Role) GetByName(name string) (model.Role, error) {
 	role, err := r.database.GetByName(name)
 	if err != nil {
 		if errors.Is(err, errs.ErrRoleNotFound) {
-			return nil, errs.ErrRoleNotFound
+			return model.EmptyRole, errs.ErrRoleNotFound
 		}
 
-		return nil, fmt.Errorf("error getting role from database: %w", err)
+		return model.EmptyRole, fmt.Errorf("error getting role from database: %w", err)
 	}
 
 	return role, nil

@@ -7,7 +7,7 @@ import (
 )
 
 type Role interface {
-	GetByName(name string) (*model.Role, error)
+	GetByName(name string) (model.Role, error)
 	GetAll(paginate int, qt int) ([]model.Role, error)
 	Exist(roles []string) (bool, error)
 	Create(role model.Role) error
@@ -15,9 +15,9 @@ type Role interface {
 }
 
 type User interface {
-	GetByID(id model.ID) (*model.User, error)
-	GetByUsername(username string) (*model.User, error)
-	GetByEmail(email string) (*model.User, error)
+	GetByID(id model.ID) (model.User, error)
+	GetByUsername(username string) (model.User, error)
+	GetByEmail(email string) (model.User, error)
 	GetAll(paginate int, qt int) ([]model.User, error)
 	GetByRoles(role []string, paginate int, qt int) ([]model.User, error)
 	Create(user model.User) error
@@ -29,5 +29,5 @@ type UserSession interface {
 	GetAll(paginate int, qt int) ([]model.UserSession, error)
 	GetByUserID(id model.ID, paginate int, qt int) ([]model.UserSession, error)
 	Create(user model.UserSession, expires time.Duration) error
-	Delete(id model.ID, deletetAd time.Time) (*model.UserSession, error)
+	Delete(id model.ID, deletetAd time.Time) (model.UserSession, error)
 }

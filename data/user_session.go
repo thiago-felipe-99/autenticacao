@@ -210,7 +210,7 @@ func (u *UserSessionRedis) consumeChan(
 	}
 }
 
-func (u *UserSessionRedis) invalidUserSessions(clock time.Duration) {
+func (u *UserSessionRedis) expiredUserSessions(clock time.Duration) {
 	ticker := time.NewTicker(clock)
 
 	getInactives := `SELECT uc.id, uc.userid, uc.created_at, uc.expires, uc.deleted_at
@@ -266,7 +266,7 @@ func (u *UserSessionRedis) ConsumeQueues(clock time.Duration, max int) error {
 
 	go u.consumeChan(clock, max, u.created, "users_sessions_created")
 	go u.consumeChan(clock, max, u.deleted, "users_sessions_deleted")
-	go u.invalidUserSessions(clock)
+	go u.expiredUserSessions(clock)
 
 	return nil
 }

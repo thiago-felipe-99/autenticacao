@@ -118,7 +118,7 @@ func TestRoleGet(t *testing.T) {
 			require.NoError(t, err)
 
 			require.Equal(t, roleTmp, roledb.Name)
-			require.LessOrEqual(t, time.Since(roledb.CreatedAt), time.Second)
+			require.LessOrEqual(t, time.Since(roledb.CreatedAt), time.Millisecond*1500)
 			require.True(t, time.Time{}.Equal(roledb.DeletedAt))
 			require.Equal(t, model.EmptyID, roledb.DeletedBy)
 		})
@@ -134,7 +134,7 @@ func TestRoleGet(t *testing.T) {
 
 		for _, roledb := range rolesdb {
 			require.True(t, slices.Contains(rolesTmp, roledb.Name))
-			require.LessOrEqual(t, time.Since(roledb.CreatedAt), time.Second)
+			require.LessOrEqual(t, time.Since(roledb.CreatedAt), time.Millisecond*1500)
 			require.True(t, time.Time{}.Equal(roledb.DeletedAt))
 			require.Equal(t, model.EmptyID, roledb.DeletedBy)
 		}

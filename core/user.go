@@ -64,7 +64,7 @@ func (u *User) GetByEmail(email string) (model.User, error) {
 func (u *User) GetAll(paginate int, qt int) ([]model.User, error) {
 	users, err := u.database.GetAll(paginate, qt)
 	if err != nil {
-		return nil, fmt.Errorf("error on getting user from database: %w", err)
+		return model.EmptyUsers, fmt.Errorf("error on getting user from database: %w", err)
 	}
 
 	return users, nil
@@ -89,7 +89,7 @@ func (u *User) GetByRole(roles []string, paginate int, qt int) ([]model.User, er
 }
 
 func (u *User) Create(createdBy model.ID, partial model.UserPartial) (model.ID, error) {
-	err := validate(u.validate, partial)
+	err := Validate(u.validate, partial)
 	if err != nil {
 		return model.EmptyID, err
 	}
@@ -123,7 +123,7 @@ func (u *User) Create(createdBy model.ID, partial model.UserPartial) (model.ID, 
 
 	hash, err := u.createHash(partial.Password)
 	if err != nil {
-		return model.EmptyID, fmt.Errorf("error creating password hash: %w", err)
+		return model.EmptyID, err
 	}
 
 	roles := make([]string, 0, len(partial.Roles))
@@ -156,7 +156,7 @@ func (u *User) Create(createdBy model.ID, partial model.UserPartial) (model.ID, 
 }
 
 func (u *User) Update(userID model.ID, partial model.UserUpdate) error {
-	err := validate(u.validate, partial)
+	err := Validate(u.validate, partial)
 	if err != nil {
 		return err
 	}
@@ -199,7 +199,7 @@ func (u *User) Update(userID model.ID, partial model.UserUpdate) error {
 	if partial.Password != "" {
 		hash, err := u.createHash(partial.Password)
 		if err != nil {
-			return fmt.Errorf("error creating password hash: %w", err)
+			return err
 		}
 
 		user.Password = hash

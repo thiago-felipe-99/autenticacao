@@ -8,15 +8,15 @@ import (
 	"github.com/thiago-felipe-99/autenticacao/errs"
 )
 
-type ModelInvalidError struct {
+type InvalidError struct {
 	invalid validator.ValidationErrors
 }
 
-func (m ModelInvalidError) Error() string {
+func (m InvalidError) Error() string {
 	return m.invalid.Error()
 }
 
-func (m ModelInvalidError) Translate(language ut.Translator) string {
+func (m InvalidError) Translate(language ut.Translator) string {
 	messages := m.invalid.Translate(language)
 
 	messageSend := ""
@@ -27,7 +27,11 @@ func (m ModelInvalidError) Translate(language ut.Translator) string {
 	return messageSend[2:]
 }
 
-func validate(validate *validator.Validate, data any) error {
+func NewInvalidError(errs validator.ValidationErrors) InvalidError {
+	return InvalidError{errs}
+}
+
+func Validate(validate *validator.Validate, data any) error {
 	err := validate.Struct(data)
 	if err != nil {
 		validationErrs := validator.ValidationErrors{}
@@ -37,7 +41,7 @@ func validate(validate *validator.Validate, data any) error {
 			return errs.ErrBodyValidate
 		}
 
-		return ModelInvalidError{validationErrs}
+		return NewInvalidError(validationErrs)
 	}
 
 	return nil

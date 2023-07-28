@@ -150,7 +150,7 @@ func TestUserSessionCreate(t *testing.T) { //nolint:funlen
 					t.Parallel()
 
 					userSessionCreated, err := userSession.Create(input.input)
-					require.ErrorAs(t, err, &core.ModelInvalidError{})
+					require.ErrorAs(t, err, &core.InvalidError{})
 					require.Equal(t, userSessionCreated, model.EmptyUserSession)
 				})
 			}
@@ -390,7 +390,7 @@ func TestUserSessionDelete(t *testing.T) {
 	}
 }
 
-func TestUserSessionGetAllActive(t *testing.T) {
+func TestUserSessionGetAll(t *testing.T) { //nolint:funlen
 	t.Parallel()
 
 	db := createTempDB(t, "user_session_get_all")
@@ -424,11 +424,19 @@ func TestUserSessionGetAllActive(t *testing.T) {
 		rolesTemp[i] = role.Name
 	}
 
-	qtUsers := overflowBuffer
-	usersID := make([]model.ID, 0, qtUsers)
-	usersSessionsID := make([]model.ID, 0, qtUsers)
+	qtUsersSessions := overflowBuffer
+	usersID := make([]model.ID, 0, qtUsersSessions)
+	usersSessionsID := make([]model.ID, 0, qtUsersSessions)
 
-	for i := 0; i < qtUsers; i++ {
+	usersSessionsActive, err := userSession.GetAllActive(0, qtUsersSessions)
+	require.NoError(t, err)
+	require.Equal(t, model.EmptyUserSessions, usersSessionsActive)
+
+	usersSessionsInactive, err := userSession.GetAllInactive(0, qtUsersSessions)
+	require.NoError(t, err)
+	require.Equal(t, model.EmptyUserSessions, usersSessionsInactive)
+
+	for i := 0; i < qtUsersSessions; i++ {
 		userID, _, userTemp := createTempUser(t, user, db, rolesTemp)
 		usersID = append(usersID, userID)
 		UserSessionPartial := model.UserSessionPartial{ //nolint:exhaustruct
@@ -444,14 +452,18 @@ func TestUserSessionGetAllActive(t *testing.T) {
 
 	time.Sleep(time.Second)
 
-	usersSessionsDB, err := userSession.GetAllActive(0, qtUsers)
+	usersSessionsActive, err = userSession.GetAllActive(0, qtUsersSessions)
 	require.NoError(t, err)
-	require.Equal(t, qtUsers, len(usersSessionsDB))
+	require.Equal(t, qtUsersSessions, len(usersSessionsActive))
 
-	usersIDDB := make([]model.ID, 0, qtUsers)
-	idDB := make([]model.ID, 0, qtUsers)
+	usersSessionsInactive, err = userSession.GetAllInactive(0, qtUsersSessions)
+	require.NoError(t, err)
+	require.Equal(t, model.EmptyUserSessions, usersSessionsInactive)
 
-	for _, userSessionTemp := range usersSessionsDB {
+	usersIDDB := make([]model.ID, 0, qtUsersSessions)
+	idDB := make([]model.ID, 0, qtUsersSessions)
+
+	for _, userSessionTemp := range usersSessionsActive {
 		usersIDDB = append(usersIDDB, userSessionTemp.UserID)
 		idDB = append(idDB, userSessionTemp.ID)
 	}
@@ -469,12 +481,32 @@ func TestUserSessionGetAllActive(t *testing.T) {
 
 	time.Sleep(time.Second)
 
-	usersSessionsDB, err = userSession.GetAllActive(0, qtUsers)
+	usersSessionsActive, err = userSession.GetAllActive(0, qtUsersSessions)
 	require.NoError(t, err)
-	require.Equal(t, 0, len(usersSessionsDB))
+	require.Equal(t, model.EmptyUserSessions, usersSessionsActive)
+
+	usersSessionsInactive, err = userSession.GetAllInactive(0, qtUsersSessions)
+	require.NoError(t, err)
+	require.Equal(t, qtUsersSessions, len(usersSessionsInactive))
+
+	usersIDDB = usersIDDB[:0]
+	idDB = idDB[:0]
+
+	for _, userSessionTemp := range usersSessionsInactive {
+		usersIDDB = append(usersIDDB, userSessionTemp.UserID)
+		idDB = append(idDB, userSessionTemp.ID)
+	}
+
+	for _, userID := range usersID {
+		require.True(t, slices.Contains(usersIDDB, userID))
+	}
+
+	for _, id := range usersSessionsID {
+		require.True(t, slices.Contains(idDB, id))
+	}
 }
 
-func TestUserSessionGetByID(t *testing.T) {
+func TestUserSessionGetByID(t *testing.T) { //nolint:funlen
 	t.Parallel()
 
 	db := createTempDB(t, "user_session_get_all")
@@ -517,6 +549,14 @@ func TestUserSessionGetByID(t *testing.T) {
 		Password: userTemp.Password,
 	}
 
+	usersSessionsActive, err := userSession.GetByUserIDActive(userID, 0, qtUserSessions)
+	require.NoError(t, err)
+	require.Equal(t, model.EmptyUserSessions, usersSessionsActive)
+
+	usersSessionsInactive, err := userSession.GetByUserIDInactive(userID, 0, qtUserSessions)
+	require.NoError(t, err)
+	require.Equal(t, model.EmptyUserSessions, usersSessionsInactive)
+
 	for i := 0; i < qtUserSessions; i++ {
 		userSessionTemp, err := userSession.Create(UserSessionPartial)
 		require.NoError(t, err)
@@ -526,14 +566,18 @@ func TestUserSessionGetByID(t *testing.T) {
 
 	time.Sleep(time.Second)
 
-	usersSessionsDB, err := userSession.GetByUserIDActive(userID, 0, qtUserSessions)
+	usersSessionsActive, err = userSession.GetByUserIDActive(userID, 0, qtUserSessions)
 	require.NoError(t, err)
-	require.Equal(t, qtUserSessions, len(usersSessionsDB))
+	require.Equal(t, qtUserSessions, len(usersSessionsActive))
+
+	usersSessionsInactive, err = userSession.GetByUserIDInactive(userID, 0, qtUserSessions)
+	require.NoError(t, err)
+	require.Equal(t, model.EmptyUserSessions, usersSessionsInactive)
 
 	usersIDDB := make([]model.ID, 0, qtUserSessions)
 	idDB := make([]model.ID, 0, qtUserSessions)
 
-	for _, userSessionTemp := range usersSessionsDB {
+	for _, userSessionTemp := range usersSessionsActive {
 		usersIDDB = append(usersIDDB, userSessionTemp.UserID)
 		idDB = append(idDB, userSessionTemp.ID)
 	}
@@ -551,7 +595,149 @@ func TestUserSessionGetByID(t *testing.T) {
 
 	time.Sleep(time.Second)
 
-	usersSessionsDB, err = userSession.GetByUserIDActive(userID, 0, qtUserSessions)
+	usersSessionsActive, err = userSession.GetByUserIDActive(userID, 0, qtUserSessions)
 	require.NoError(t, err)
-	require.Equal(t, 0, len(usersSessionsDB))
+	require.Equal(t, model.EmptyUserSessions, usersSessionsActive)
+
+	usersSessionsInactive, err = userSession.GetByUserIDInactive(userID, 0, qtUserSessions)
+	require.NoError(t, err)
+	require.Equal(t, qtUserSessions, len(usersSessionsInactive))
+
+	usersIDDB = usersIDDB[:0]
+	idDB = idDB[:0]
+
+	for _, userSessionTemp := range usersSessionsInactive {
+		usersIDDB = append(usersIDDB, userSessionTemp.UserID)
+		idDB = append(idDB, userSessionTemp.ID)
+	}
+
+	for _, userIDDB := range usersIDDB {
+		require.Equal(t, userIDDB, userID)
+	}
+
+	for _, id := range userSessionsID {
+		require.True(t, slices.Contains(idDB, id))
+	}
+}
+
+func checkUserSessionWrongDB(t *testing.T, userSession *core.UserSession, qtRoles int) {
+	t.Helper()
+
+	roles, err := userSession.GetAllActive(0, qtRoles)
+	require.ErrorContains(t, err, "no such host")
+	assert.Equal(t, model.EmptyUserSessions, roles)
+
+	roles, err = userSession.GetAllInactive(0, qtRoles)
+	require.ErrorContains(t, err, "no such host")
+	assert.Equal(t, model.EmptyUserSessions, roles)
+
+	roles, err = userSession.GetByUserIDActive(model.NewID(), 0, qtRoles)
+	require.ErrorContains(t, err, "no such host")
+	assert.Equal(t, model.EmptyUserSessions, roles)
+
+	roles, err = userSession.GetByUserIDInactive(model.NewID(), 0, qtRoles)
+	require.ErrorContains(t, err, "no such host")
+	assert.Equal(t, model.EmptyUserSessions, roles)
+
+	role, err := userSession.Delete(model.NewID())
+	require.ErrorContains(t, err, "no such host")
+	assert.Equal(t, model.EmptyUserSession, role)
+
+	role, err = userSession.Refresh(model.NewID())
+	require.ErrorContains(t, err, "no such host")
+	assert.Equal(t, model.EmptyUserSession, role)
+}
+
+func TestUserSessionWrongDB(t *testing.T) {
+	t.Parallel()
+
+	db := createWrongDB(t)
+	dbValid := createTempDB(t, "user_wrong_db")
+
+	role1 := core.NewRole(data.NewRoleSQL(dbValid), validator.New())
+	role2 := core.NewRole(data.NewRoleSQL(db), validator.New())
+
+	qtRoles := 10
+	rolesValid := make([]string, qtRoles)
+
+	for i := range rolesValid {
+		_, role := createTempRole(t, role1, dbValid)
+		rolesValid[i] = role.Name
+	}
+
+	user1 := core.NewUser(data.NewUserSQL(dbValid), role1, validator.New(), true)
+	user2 := core.NewUser(data.NewUserSQL(db), role2, validator.New(), true)
+
+	inputUser := model.UserPartial{
+		Name:     gofakeit.Name(),
+		Username: gofakeit.Username(),
+		Email:    gofakeit.Email(),
+		Password: gofakeit.Password(true, true, true, true, true, 20),
+		Roles:    rolesValid,
+	}
+
+	redisClient1 := redis.NewClient(&redis.Options{ //nolint:exhaustruct
+		Addr:     "localhost:6379",
+		Password: "redis",
+		DB:       0,
+	})
+	redisClient2 := redis.NewClient(&redis.Options{ //nolint:exhaustruct
+		Addr:     "wrong:6379",
+		Password: "redis",
+		DB:       0,
+	})
+	buffer := 1
+	overflowBuffer := buffer * 10
+
+	userSessionRedis1 := data.NewUserSessionRedis(redisClient1, db, overflowBuffer)
+	userSession1 := core.NewUserSession(
+		userSessionRedis1,
+		user1,
+		validator.New(),
+		time.Second,
+	)
+	err := userSessionRedis1.ConsumeQueues(time.Second, buffer)
+	assert.NoError(t, err)
+
+	userSession2 := core.NewUserSession(
+		data.NewUserSessionRedis(redisClient2, db, overflowBuffer),
+		user1,
+		validator.New(),
+		time.Second,
+	)
+
+	userSession3 := core.NewUserSession(
+		data.NewUserSessionRedis(redisClient2, db, overflowBuffer),
+		user2,
+		validator.New(),
+		time.Second,
+	)
+
+	input := model.UserSessionPartial{ //nolint:exhaustruct
+		Username: inputUser.Username,
+		Password: inputUser.Password,
+	}
+
+	userID, err := user1.Create(model.NewID(), inputUser)
+	require.NoError(t, err)
+
+	userSessionTemp, err := userSession1.Create(input)
+	require.NoError(t, err)
+	require.Equal(t, userID, userSessionTemp.UserID)
+	require.LessOrEqual(t, time.Since(userSessionTemp.CreateaAt), time.Second)
+	require.Equal(t, time.Time{}, userSessionTemp.DeletedAt)
+
+	errCh := <-userSessionRedis1.Errors()
+	assert.ErrorContains(t, errCh, "no such host")
+
+	userSessionTemp, err = userSession2.Create(input)
+	require.ErrorContains(t, err, "no such host")
+	assert.Equal(t, model.EmptyUserSession, userSessionTemp)
+
+	userSessionTemp, err = userSession3.Create(input)
+	require.ErrorContains(t, err, "no such host")
+	assert.Equal(t, model.EmptyUserSession, userSessionTemp)
+
+	checkUserSessionWrongDB(t, userSession2, qtRoles)
+	checkUserSessionWrongDB(t, userSession3, qtRoles)
 }

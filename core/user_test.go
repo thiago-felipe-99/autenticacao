@@ -206,7 +206,7 @@ func TestUserCreate(t *testing.T) {
 				t.Parallel()
 
 				userCreated, err := user.Create(model.NewID(), test.input)
-				require.ErrorAs(t, err, &core.ModelInvalidError{})
+				require.ErrorAs(t, err, &core.InvalidError{})
 				require.Equal(t, userCreated, model.EmptyID)
 			})
 		}
@@ -582,7 +582,7 @@ func TestUserUpdate(t *testing.T) {
 				t.Parallel()
 
 				err := user.Update(model.NewID(), test.input)
-				require.ErrorAs(t, err, &core.ModelInvalidError{})
+				require.ErrorAs(t, err, &core.InvalidError{})
 			})
 		}
 	})
@@ -771,6 +771,14 @@ func TestUserDelete(t *testing.T) { //nolint:funlen
 		})
 	}
 
+	t.Run("GetByRole/NotExist", func(t *testing.T) {
+		t.Parallel()
+
+		usersdb, err := user.GetByRole([]string{gofakeit.Name()}, 0, qtRoles)
+		require.ErrorIs(t, err, errs.ErrRoleNotFound)
+		require.Equal(t, model.EmptyUsers, usersdb)
+	})
+
 	t.Run("GetByRole/Multiples", func(t *testing.T) { //nolint:dupl
 		t.Parallel()
 
@@ -860,4 +868,88 @@ func TestUserWithArgon(t *testing.T) {
 			require.Equal(t, userFound, model.EmptyUser)
 		})
 	}
+}
+
+func checkUserWrongDB(
+	t *testing.T,
+	user *core.User,
+	input model.UserPartial,
+	rolesValid []string,
+	update model.UserUpdate,
+) {
+	t.Helper()
+
+	id, err := user.Create(model.NewID(), input)
+	require.ErrorContains(t, err, "no such host")
+	require.Equal(t, model.EmptyID, id)
+
+	users, err := user.GetAll(0, 100)
+	require.ErrorContains(t, err, "no such host")
+	require.Equal(t, model.EmptyUsers, users)
+
+	users, err = user.GetByRole(rolesValid[0:2], 0, 100)
+	require.ErrorContains(t, err, "no such host")
+	require.Equal(t, model.EmptyUsers, users)
+
+	roleTemp, err := user.GetByID(model.NewID())
+	require.ErrorContains(t, err, "no such host")
+	require.Equal(t, model.EmptyUser, roleTemp)
+
+	roleTemp, err = user.GetByEmail(gofakeit.Email())
+	require.ErrorContains(t, err, "no such host")
+	require.Equal(t, model.EmptyUser, roleTemp)
+
+	roleTemp, err = user.GetByUsername(gofakeit.Username())
+	require.ErrorContains(t, err, "no such host")
+	require.Equal(t, model.EmptyUser, roleTemp)
+
+	err = user.Update(model.NewID(), update)
+	require.ErrorContains(t, err, "no such host")
+
+	err = user.Delete(model.NewID(), model.NewID())
+	require.ErrorContains(t, err, "no such host")
+
+	equal, err := user.EqualPassword(gofakeit.Name(), "invalid-hash")
+	require.ErrorContains(t, err, "error comparaing hash")
+	require.False(t, equal)
+}
+
+func TestUserWrongDB(t *testing.T) {
+	t.Parallel()
+
+	db := createWrongDB(t)
+	dbValid := createTempDB(t, "user_wrong_db")
+
+	role1 := core.NewRole(data.NewRoleSQL(dbValid), validator.New())
+	role2 := core.NewRole(data.NewRoleSQL(db), validator.New())
+
+	qtRoles := 10
+	rolesValid := make([]string, qtRoles)
+
+	for i := range rolesValid {
+		_, role := createTempRole(t, role1, dbValid)
+		rolesValid[i] = role.Name
+	}
+
+	user1 := core.NewUser(data.NewUserSQL(db), role1, validator.New(), true)
+	user2 := core.NewUser(data.NewUserSQL(db), role2, validator.New(), true)
+
+	input := model.UserPartial{
+		Name:     gofakeit.Name(),
+		Username: gofakeit.Username(),
+		Email:    gofakeit.Email(),
+		Password: gofakeit.Password(true, true, true, true, true, 20),
+		Roles:    rolesValid,
+	}
+	update := model.UserUpdate{
+		Name:     gofakeit.Name(),
+		Username: gofakeit.Username(),
+		Email:    gofakeit.Email(),
+		Password: gofakeit.Password(true, true, true, true, true, 20),
+		Roles:    rolesValid,
+		IsActive: boolPointer(false),
+	}
+
+	checkUserWrongDB(t, user1, input, rolesValid, update)
+	checkUserWrongDB(t, user2, input, rolesValid, update)
 }

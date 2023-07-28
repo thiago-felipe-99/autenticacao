@@ -65,7 +65,7 @@ func TestRoleCreate(t *testing.T) {
 				t.Parallel()
 
 				err := role.Create(id, test.input)
-				require.ErrorAs(t, err, &core.ModelInvalidError{})
+				require.ErrorAs(t, err, &core.InvalidError{})
 			})
 		}
 	})
@@ -207,4 +207,29 @@ func TestRoleDelete(t *testing.T) {
 			})
 		}
 	})
+}
+
+func TestRoleWrongDB(t *testing.T) {
+	t.Parallel()
+
+	db := createWrongDB(t)
+	role := core.NewRole(data.NewRoleSQL(db), validator.New())
+
+	err := role.Create(model.NewID(), model.RolePartial{Name: gofakeit.Name()})
+	require.ErrorContains(t, err, "no such host")
+
+	roles, err := role.GetAll(0, 100)
+	require.ErrorContains(t, err, "no such host")
+	require.Equal(t, model.EmptyRoles, roles)
+
+	roleTemp, err := role.GetByName(gofakeit.Name())
+	require.ErrorContains(t, err, "no such host")
+	require.Equal(t, model.EmptyRole, roleTemp)
+
+	exist, err := role.Exist([]string{gofakeit.Name()})
+	require.ErrorContains(t, err, "no such host")
+	require.False(t, exist)
+
+	err = role.Delete(model.NewID(), gofakeit.Name())
+	require.ErrorContains(t, err, "no such host")
 }

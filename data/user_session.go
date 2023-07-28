@@ -225,7 +225,7 @@ func (u *UserSessionRedis) invalidUserSessions(clock time.Duration) {
 	VALUES (:id, :userid, :created_at, :expires, :deleted_at)`
 
 	for range ticker.C {
-		usersSessions := make([]model.UserSession, 0, 1000)
+		usersSessions := make([]model.UserSession, 0, 1000) //nolint:gomnd
 
 		err := u.database.Select(&usersSessions, getInactives)
 		if err != nil {

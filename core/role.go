@@ -32,7 +32,7 @@ func (r *Role) GetByName(name string) (model.Role, error) {
 func (r *Role) GetAll(paginate int, qt int) ([]model.Role, error) {
 	roles, err := r.database.GetAll(paginate, qt)
 	if err != nil {
-		return nil, fmt.Errorf("error getting role from database: %w", err)
+		return model.EmptyRoles, fmt.Errorf("error getting role from database: %w", err)
 	}
 
 	return roles, nil
@@ -48,7 +48,7 @@ func (r *Role) Exist(roles []string) (bool, error) {
 }
 
 func (r *Role) Create(createdBy model.ID, partial model.RolePartial) error {
-	err := validate(r.validate, partial)
+	err := Validate(r.validate, partial)
 	if err != nil {
 		return err
 	}

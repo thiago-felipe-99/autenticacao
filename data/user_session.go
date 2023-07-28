@@ -15,8 +15,9 @@ import (
 )
 
 var (
-	ErrMaxBiggerThanBuffer = fmt.Errorf("max must be less than buffer size")
-	ErrSmallClock          = fmt.Errorf("clock must be greater o equal to 1 second")
+	ErrMaxBiggerThanBuffer    = fmt.Errorf("max must be less than buffer size")
+	ErrSmallClock             = fmt.Errorf("clock must be greater o equal to 1 second")
+	ErrInsertingUserSessionDB = fmt.Errorf("error inserting user session in db")
 )
 
 type UserSessionRedis struct {
@@ -25,6 +26,7 @@ type UserSessionRedis struct {
 	created    chan model.UserSession
 	deleted    chan model.UserSession
 	bufferSize int
+	errs       chan error
 }
 
 func (u *UserSessionRedis) GetAll(paginate int, qt int) ([]model.UserSession, error) {
@@ -128,7 +130,7 @@ func (u *UserSessionRedis) consumeChan(
 	saveDatabase := func() {
 		_, err := u.database.NamedExec(query, usersSessions)
 		if err != nil {
-			log.Printf("[ERROR] - Error inserting user sessions in %s: %s", table, err)
+			u.errs <- errors.Join(ErrInsertingUserSessionDB, err)
 		}
 
 		usersSessions = usersSessions[:0]
@@ -154,8 +156,6 @@ func (u *UserSessionRedis) consumeChan(
 }
 
 func (u *UserSessionRedis) ConsumeQueues(clock time.Duration, max int) error {
-	log.Println(max, u.bufferSize)
-
 	if max >= u.bufferSize {
 		return ErrMaxBiggerThanBuffer
 	}
@@ -168,6 +168,18 @@ func (u *UserSessionRedis) ConsumeQueues(clock time.Duration, max int) error {
 	go u.consumeChan(clock, max, u.deleted, "users_sessions_deleted")
 
 	return nil
+}
+
+func (u *UserSessionRedis) Errors() <-chan error {
+	return u.errs
+}
+
+func (u *UserSessionRedis) LogErrors() {
+	go func() {
+		for err := range u.Errors() {
+			log.Printf("[ERROR] - %v", err)
+		}
+	}()
 }
 
 var _ UserSession = &UserSessionRedis{} //nolint:exhaustruct
@@ -183,5 +195,6 @@ func NewUserSessionRedis(
 		created:    make(chan model.UserSession, bufferSize),
 		deleted:    make(chan model.UserSession, bufferSize),
 		bufferSize: bufferSize,
+		errs:       make(chan error, bufferSize),
 	}
 }

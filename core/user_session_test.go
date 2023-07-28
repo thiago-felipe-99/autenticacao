@@ -39,6 +39,7 @@ func TestUserSessionCreate(t *testing.T) { //nolint:funlen
 
 	err := userSessionRedis.ConsumeQueues(time.Second, buffer/2)
 	require.NoError(t, err)
+	userSessionRedis.LogErrors()
 
 	qtRoles := 5
 	rolesTemp := make([]string, qtRoles)
@@ -238,6 +239,7 @@ func TestUserSessionRefresh(t *testing.T) {
 
 	err := userSessionRedis.ConsumeQueues(time.Second, buffer/2)
 	require.NoError(t, err)
+	userSessionRedis.LogErrors()
 
 	qtRoles := 5
 	rolesTemp := make([]string, qtRoles)
@@ -317,6 +319,7 @@ func TestUserSessionDelete(t *testing.T) {
 
 	err := userSessionRedis.ConsumeQueues(time.Second, buffer/2)
 	require.NoError(t, err)
+	userSessionRedis.LogErrors()
 
 	qtRoles := 5
 	rolesTemp := make([]string, qtRoles)
@@ -396,6 +399,7 @@ func TestUserSessionGetAll(t *testing.T) {
 
 	err := userSessionRedis.ConsumeQueues(time.Second, buffer/2)
 	require.NoError(t, err)
+	userSessionRedis.LogErrors()
 
 	qtRoles := 5
 	rolesTemp := make([]string, qtRoles)
@@ -495,6 +499,7 @@ func TestUserSessionGetByID(t *testing.T) {
 
 	err := userSessionRedis.ConsumeQueues(time.Second, buffer/2)
 	require.NoError(t, err)
+	userSessionRedis.LogErrors()
 
 	qtRoles := 5
 	rolesTemp := make([]string, qtRoles)

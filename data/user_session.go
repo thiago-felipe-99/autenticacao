@@ -29,13 +29,16 @@ type UserSessionRedis struct {
 	errs       chan error
 }
 
-func (u *UserSessionRedis) GetAll(paginate int, qt int) ([]model.UserSession, error) {
-	userSessions := []model.UserSession{}
+func (u *UserSessionRedis) GetAllActive(paginate int, qt int) ([]model.UserSession, error) {
+	userSessions := make([]model.UserSession, qt)
 
 	err := u.database.Select(
 		&userSessions,
-		`SELECT id, userid, created_at, deleted_at
-		FROM users_sessions_created 
+		`SELECT uc.id, uc.userid, uc.created_at, uc.expires, uc.deleted_at
+		FROM users_sessions_created uc
+		LEFT JOIN users_sessions_deleted ud
+		ON uc.id = ud.id 
+		WHERE ud.id IS NULL AND now() < uc.expires
 		LIMIT $1 
 		OFFSET $2`,
 		qt,
@@ -48,18 +51,20 @@ func (u *UserSessionRedis) GetAll(paginate int, qt int) ([]model.UserSession, er
 	return userSessions, nil
 }
 
-func (u *UserSessionRedis) GetByUserID(
+func (u *UserSessionRedis) GetByUserIDActive(
 	id model.ID,
 	paginate int,
 	qt int,
 ) ([]model.UserSession, error) {
-	userSessions := []model.UserSession{}
+	userSessions := make([]model.UserSession, qt)
 
 	err := u.database.Select(
 		&userSessions,
-		`SELECT id, userid, created_at, deleted_at
-		FROM users_sessions_created 
-		WHERE userid = $1
+		`SELECT uc.id, uc.userid, uc.created_at, uc.expires, uc.deleted_at
+		FROM users_sessions_created uc
+		LEFT JOIN users_sessions_deleted ud
+		ON uc.id = ud.id 
+		WHERE ud.id IS NULL AND now() < uc.expires AND uc.userid = $1
 		LIMIT $2 
 		OFFSET $3`,
 		id,
@@ -73,13 +78,62 @@ func (u *UserSessionRedis) GetByUserID(
 	return userSessions, nil
 }
 
-func (u *UserSessionRedis) Create(userSession model.UserSession, expires time.Duration) error {
+func (u *UserSessionRedis) GetAllInactive(paginate int, qt int) ([]model.UserSession, error) {
+	userSessions := make([]model.UserSession, qt)
+
+	err := u.database.Select(
+		&userSessions,
+		`SELECT ud.id, ud.userid, ud.created_at, ud.expires, ud.deleted_at
+		FROM users_sessions_deleted ud
+		LEFT JOIN users_sessions_created uc
+		ON ud.id = uc.id 
+		LIMIT $1 
+		OFFSET $2`,
+		qt,
+		qt*paginate,
+	)
+	if err != nil {
+		return model.EmptyUserSessions, fmt.Errorf("error get user sessions in database: %w", err)
+	}
+
+	return userSessions, nil
+}
+
+func (u *UserSessionRedis) GetByUserIDInactive(
+	id model.ID,
+	paginate int,
+	qt int,
+) ([]model.UserSession, error) {
+	userSessions := make([]model.UserSession, qt)
+
+	err := u.database.Select(
+		&userSessions,
+		`SELECT ud.id, ud.userid, ud.created_at, ud.expires, ud.deleted_at
+		FROM users_sessions_deleted ud
+		LEFT JOIN users_sessions_created uc
+		ON ud.id = uc.id 
+		WHERE ud.userid = $1
+		LIMIT $2 
+		OFFSET $3`,
+		id,
+		qt,
+		qt*paginate,
+	)
+	if err != nil {
+		return model.EmptyUserSessions, fmt.Errorf("error get user sessions in database: %w", err)
+	}
+
+	return userSessions, nil
+}
+
+func (u *UserSessionRedis) Create(userSession model.UserSession) error {
 	serial, err := msgpack.Marshal(&userSession)
 	if err != nil {
 		return fmt.Errorf("error marshaling user session: %w", err)
 	}
 
-	_, err = u.redis.Set(context.Background(), userSession.ID.String(), serial, expires).Result()
+	_, err = u.redis.Set(context.Background(), userSession.ID.String(), serial, time.Since(userSession.Expires)).
+		Result()
 	if err != nil {
 		return fmt.Errorf("error setting user session in redis: %w", err)
 	}
@@ -123,7 +177,8 @@ func (u *UserSessionRedis) consumeChan(
 	usersSessions := make([]model.UserSession, 0, max)
 
 	query := fmt.Sprintf(
-		"INSERT INTO %s (id, userid, created_at, deleted_at) VALUES (:id, :userid, :created_at, :deleted_at)",
+		`INSERT INTO %s (id, userid, created_at, expires, deleted_at) 
+		VALUES (:id, :userid, :created_at, :expires, :deleted_at)`,
 		table,
 	)
 
@@ -155,6 +210,51 @@ func (u *UserSessionRedis) consumeChan(
 	}
 }
 
+func (u *UserSessionRedis) invalidUserSessions(clock time.Duration) {
+	ticker := time.NewTicker(clock)
+
+	getInactives := `SELECT uc.id, uc.userid, uc.created_at, uc.expires, uc.deleted_at
+	FROM users_sessions_created uc
+	LEFT JOIN users_sessions_deleted ud
+	ON uc.id = ud.id 
+	WHERE ud.id IS NULL AND now() > uc.expires
+	LIMIT 1000
+	`
+
+	insertInactives := `INSERT INTO users_sessions_deleted (id, userid, created_at, expires, deleted_at) 
+	VALUES (:id, :userid, :created_at, :expires, :deleted_at)`
+
+	for range ticker.C {
+		usersSessions := make([]model.UserSession, 0, 1000)
+
+		err := u.database.Select(&usersSessions, getInactives)
+		if err != nil {
+			u.errs <- fmt.Errorf("error get user sessions in database: %w", err)
+		}
+
+		for len(usersSessions) == 1000 {
+			_, err = u.database.NamedExec(insertInactives, usersSessions)
+			if err != nil {
+				u.errs <- errors.Join(ErrInsertingUserSessionDB, err)
+			}
+
+			usersSessions = usersSessions[:0]
+
+			err := u.database.Select(&usersSessions, getInactives)
+			if err != nil {
+				u.errs <- fmt.Errorf("error get user sessions in database: %w", err)
+			}
+		}
+
+		if len(usersSessions) > 0 {
+			_, err = u.database.NamedExec(insertInactives, usersSessions)
+			if err != nil {
+				u.errs <- errors.Join(ErrInsertingUserSessionDB, err)
+			}
+		}
+	}
+}
+
 func (u *UserSessionRedis) ConsumeQueues(clock time.Duration, max int) error {
 	if max >= u.bufferSize {
 		return ErrMaxBiggerThanBuffer
@@ -166,6 +266,7 @@ func (u *UserSessionRedis) ConsumeQueues(clock time.Duration, max int) error {
 
 	go u.consumeChan(clock, max, u.created, "users_sessions_created")
 	go u.consumeChan(clock, max, u.deleted, "users_sessions_deleted")
+	go u.invalidUserSessions(clock)
 
 	return nil
 }

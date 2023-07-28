@@ -18,8 +18,8 @@ type UserSession struct {
 	expires   time.Duration
 }
 
-func (u *UserSession) GetAll(paginate int, qt int) ([]model.UserSession, error) {
-	userSessions, err := u.database.GetAll(paginate, qt)
+func (u *UserSession) GetAllActive(paginate int, qt int) ([]model.UserSession, error) {
+	userSessions, err := u.database.GetAllActive(paginate, qt)
 	if err != nil {
 		return nil, fmt.Errorf("error getting users sessions from database: %w", err)
 	}
@@ -27,12 +27,34 @@ func (u *UserSession) GetAll(paginate int, qt int) ([]model.UserSession, error) 
 	return userSessions, nil
 }
 
-func (u *UserSession) GetByUserID(
+func (u *UserSession) GetByUserIDActive(
 	userID model.ID,
 	paginate int,
 	qt int,
 ) ([]model.UserSession, error) {
-	userSessions, err := u.database.GetByUserID(userID, paginate, qt)
+	userSessions, err := u.database.GetByUserIDActive(userID, paginate, qt)
+	if err != nil {
+		return nil, fmt.Errorf("error getting users sessions from database: %w", err)
+	}
+
+	return userSessions, nil
+}
+
+func (u *UserSession) GetAllInactive(paginate int, qt int) ([]model.UserSession, error) {
+	userSessions, err := u.database.GetAllInactive(paginate, qt)
+	if err != nil {
+		return nil, fmt.Errorf("error getting users sessions from database: %w", err)
+	}
+
+	return userSessions, nil
+}
+
+func (u *UserSession) GetByUserIDInactive(
+	userID model.ID,
+	paginate int,
+	qt int,
+) ([]model.UserSession, error) {
+	userSessions, err := u.database.GetByUserIDInactive(userID, paginate, qt)
 	if err != nil {
 		return nil, fmt.Errorf("error getting users sessions from database: %w", err)
 	}
@@ -71,10 +93,11 @@ func (u *UserSession) Create(partial model.UserSessionPartial) (model.UserSessio
 		ID:        model.NewID(),
 		UserID:    user.ID,
 		CreateaAt: time.Now(),
+		Expires:   time.Now().Add(u.expires),
 		DeletedAt: time.Time{},
 	}
 
-	err = u.database.Create(userSession, u.expires)
+	err = u.database.Create(userSession)
 	if err != nil {
 		return userSession, fmt.Errorf("error creating user session on database: %w", err)
 	}
@@ -89,7 +112,10 @@ func (u *UserSession) Delete(id model.ID) (model.UserSession, error) {
 			return model.EmptyUserSession, errs.ErrUserSessionNotFoud
 		}
 
-		return model.EmptyUserSession, fmt.Errorf("error deleting user session from database: %w", err)
+		return model.EmptyUserSession, fmt.Errorf(
+			"error deleting user session from database: %w",
+			err,
+		)
 	}
 
 	return userSession, nil
@@ -105,12 +131,16 @@ func (u *UserSession) Refresh(id model.ID) (model.UserSession, error) {
 		ID:        model.NewID(),
 		UserID:    userSession.UserID,
 		CreateaAt: time.Now(),
+		Expires:   time.Now().Add(u.expires),
 		DeletedAt: time.Time{},
 	}
 
-	err = u.database.Create(userSession, u.expires)
+	err = u.database.Create(userSession)
 	if err != nil {
-		return model.EmptyUserSession, fmt.Errorf("error creating user session on database: %w", err)
+		return model.EmptyUserSession, fmt.Errorf(
+			"error creating user session on database: %w",
+			err,
+		)
 	}
 
 	return userSession, nil

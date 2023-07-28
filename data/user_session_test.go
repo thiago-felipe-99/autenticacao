@@ -10,11 +10,20 @@ import (
 	"github.com/thiago-felipe-99/autenticacao/model"
 )
 
+func logErrors(t *testing.T, errs <-chan error) {
+	t.Helper()
+
+	err := <-errs
+	t.Log(err)
+	require.NoError(t, err)
+}
+
 func createUserSession(userID model.ID) model.UserSession {
 	return model.UserSession{
 		ID:        model.NewID(),
 		UserID:    userID,
 		CreateaAt: time.Now(),
+		Expires:   time.Now().Add(time.Second),
 		DeletedAt: time.Time{},
 	}
 }
@@ -37,6 +46,8 @@ func TestUserSessionCreate(t *testing.T) {
 	require.NoError(t, err)
 	userSession.LogErrors()
 
+	go logErrors(t, userSession.Errors())
+
 	userTemp := createUser()
 	err = user.Create(userTemp)
 	require.NoError(t, err)
@@ -45,13 +56,13 @@ func TestUserSessionCreate(t *testing.T) {
 		t.Run("ValidInputs", func(t *testing.T) {
 			t.Parallel()
 
-			err := userSession.Create(createUserSession(userTemp.ID), time.Second)
+			err := userSession.Create(createUserSession(userTemp.ID))
 			require.NoError(t, err)
 		})
 	}
 
 	for i := 0; i < buffer/2; i++ {
-		err := userSession.Create(createUserSession(userTemp.ID), time.Second)
+		err := userSession.Create(createUserSession(userTemp.ID))
 		require.NoError(t, err)
 	}
 
@@ -68,9 +79,8 @@ func TestUserSessionCreate(t *testing.T) {
 		userSession := data.NewUserSessionRedis(redisClient, db, overflowBuffer)
 		err := userSession.ConsumeQueues(time.Second, buffer)
 		require.NoError(t, err)
-		userSession.LogErrors()
 
-		err = userSession.Create(createUserSession(userTemp.ID), time.Second)
+		err = userSession.Create(createUserSession(userTemp.ID))
 		require.ErrorContains(t, err, "no such host")
 	})
 
@@ -82,16 +92,16 @@ func TestUserSessionCreate(t *testing.T) {
 		err := userSession.ConsumeQueues(time.Second, buffer)
 		require.NoError(t, err)
 
-		err = userSession.Create(createUserSession(userTemp.ID), time.Second)
+		err = userSession.Create(createUserSession(userTemp.ID))
 		require.NoError(t, err)
 
 		errCh := <-userSession.Errors()
 
-		require.ErrorIs(t, errCh, data.ErrInsertingUserSessionDB)
+		require.ErrorContains(t, errCh, "no such host")
 
 		userSession.LogErrors()
 
-		err = userSession.Create(createUserSession(userTemp.ID), time.Second)
+		err = userSession.Create(createUserSession(userTemp.ID))
 		require.NoError(t, err)
 
 		time.Sleep(time.Second)

@@ -26,8 +26,10 @@ type User interface {
 }
 
 type UserSession interface {
-	GetAll(paginate int, qt int) ([]model.UserSession, error)
-	GetByUserID(id model.ID, paginate int, qt int) ([]model.UserSession, error)
-	Create(user model.UserSession, expires time.Duration) error
+	GetAllActive(paginate int, qt int) ([]model.UserSession, error)
+	GetByUserIDActive(id model.ID, paginate int, qt int) ([]model.UserSession, error)
+	GetAllInactive(paginate int, qt int) ([]model.UserSession, error)
+	GetByUserIDInactive(id model.ID, paginate int, qt int) ([]model.UserSession, error)
+	Create(user model.UserSession) error
 	Delete(id model.ID, deletetAd time.Time) (model.UserSession, error)
 }

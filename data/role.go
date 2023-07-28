@@ -39,10 +39,10 @@ func (r *RoleSQL) GetByName(name string) (model.Role, error) {
 }
 
 func (r *RoleSQL) GetAll(paginate int, qt int) ([]model.Role, error) {
-	role := []model.Role{}
+	roles := make([]model.Role, 0, qt)
 
 	err := r.database.Select(
-		&role,
+		&roles,
 		`SELECT name, created_at, created_by, deleted_at, deleted_by 
 		FROM role 
 		LIMIT $1 
@@ -54,7 +54,7 @@ func (r *RoleSQL) GetAll(paginate int, qt int) ([]model.Role, error) {
 		return model.EmptyRoles, fmt.Errorf("error get roles in database: %w", err)
 	}
 
-	return role, nil
+	return roles, nil
 }
 
 func (r *RoleSQL) Exist(roles []string) (bool, error) {

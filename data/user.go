@@ -86,7 +86,7 @@ func (u *UserSQL) GetByEmail(email string) (model.User, error) {
 }
 
 func (u *UserSQL) GetAll(paginate int, qt int) ([]model.User, error) {
-	partial := []model.UserPostgres{}
+	partial := make([]model.UserPostgres, 0, qt)
 
 	err := u.database.Select(
 		&partial,
@@ -111,7 +111,7 @@ func (u *UserSQL) GetAll(paginate int, qt int) ([]model.User, error) {
 }
 
 func (u *UserSQL) GetByRoles(roles []string, paginate int, qt int) ([]model.User, error) {
-	partial := []model.UserPostgres{}
+	partial := make([]model.UserPostgres, 0, qt)
 
 	err := u.database.Select(
 		&partial,

@@ -7,6 +7,7 @@ import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/go-playground/validator/v10"
 	"github.com/redis/go-redis/v9"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/thiago-felipe-99/autenticacao/core"
 	"github.com/thiago-felipe-99/autenticacao/data"
@@ -14,6 +15,20 @@ import (
 	"github.com/thiago-felipe-99/autenticacao/model"
 	"golang.org/x/exp/slices"
 )
+
+func logErros(t *testing.T, errs <-chan error) {
+	t.Helper()
+
+	go func() {
+		for err := range errs {
+			if assert.ErrorContains(t, err, "database is closed") {
+				continue
+			}
+
+			require.NoError(t, err)
+		}
+	}()
+}
 
 func TestUserSessionCreate(t *testing.T) { //nolint:funlen
 	t.Parallel()
@@ -39,7 +54,7 @@ func TestUserSessionCreate(t *testing.T) { //nolint:funlen
 
 	err := userSessionRedis.ConsumeQueues(time.Second, buffer/2)
 	require.NoError(t, err)
-	userSessionRedis.LogErrors()
+	logErros(t, userSessionRedis.Errors())
 
 	qtRoles := 5
 	rolesTemp := make([]string, qtRoles)
@@ -239,7 +254,7 @@ func TestUserSessionRefresh(t *testing.T) {
 
 	err := userSessionRedis.ConsumeQueues(time.Second, buffer/2)
 	require.NoError(t, err)
-	userSessionRedis.LogErrors()
+	logErros(t, userSessionRedis.Errors())
 
 	qtRoles := 5
 	rolesTemp := make([]string, qtRoles)
@@ -319,7 +334,7 @@ func TestUserSessionDelete(t *testing.T) {
 
 	err := userSessionRedis.ConsumeQueues(time.Second, buffer/2)
 	require.NoError(t, err)
-	userSessionRedis.LogErrors()
+	logErros(t, userSessionRedis.Errors())
 
 	qtRoles := 5
 	rolesTemp := make([]string, qtRoles)
@@ -375,7 +390,7 @@ func TestUserSessionDelete(t *testing.T) {
 	}
 }
 
-func TestUserSessionGetAll(t *testing.T) {
+func TestUserSessionGetAllActive(t *testing.T) {
 	t.Parallel()
 
 	db := createTempDB(t, "user_session_get_all")
@@ -399,7 +414,7 @@ func TestUserSessionGetAll(t *testing.T) {
 
 	err := userSessionRedis.ConsumeQueues(time.Second, buffer/2)
 	require.NoError(t, err)
-	userSessionRedis.LogErrors()
+	logErros(t, userSessionRedis.Errors())
 
 	qtRoles := 5
 	rolesTemp := make([]string, qtRoles)
@@ -429,7 +444,7 @@ func TestUserSessionGetAll(t *testing.T) {
 
 	time.Sleep(time.Second)
 
-	usersSessionsDB, err := userSession.GetAll(0, qtUsers)
+	usersSessionsDB, err := userSession.GetAllActive(0, qtUsers)
 	require.NoError(t, err)
 	require.Equal(t, qtUsers, len(usersSessionsDB))
 
@@ -454,25 +469,9 @@ func TestUserSessionGetAll(t *testing.T) {
 
 	time.Sleep(time.Second)
 
-	usersSessionsDB, err = userSession.GetAll(0, qtUsers)
+	usersSessionsDB, err = userSession.GetAllActive(0, qtUsers)
 	require.NoError(t, err)
-	require.Equal(t, qtUsers, len(usersSessionsDB))
-
-	usersIDDB = make([]model.ID, 0, qtUsers)
-	idDB = make([]model.ID, 0, qtUsers)
-
-	for _, userSessionTemp := range usersSessionsDB {
-		usersIDDB = append(usersIDDB, userSessionTemp.UserID)
-		idDB = append(idDB, userSessionTemp.ID)
-	}
-
-	for _, userID := range usersID {
-		require.True(t, slices.Contains(usersIDDB, userID))
-	}
-
-	for _, id := range usersSessionsID {
-		require.True(t, slices.Contains(idDB, id))
-	}
+	require.Equal(t, 0, len(usersSessionsDB))
 }
 
 func TestUserSessionGetByID(t *testing.T) {
@@ -499,7 +498,7 @@ func TestUserSessionGetByID(t *testing.T) {
 
 	err := userSessionRedis.ConsumeQueues(time.Second, buffer/2)
 	require.NoError(t, err)
-	userSessionRedis.LogErrors()
+	logErros(t, userSessionRedis.Errors())
 
 	qtRoles := 5
 	rolesTemp := make([]string, qtRoles)
@@ -527,7 +526,7 @@ func TestUserSessionGetByID(t *testing.T) {
 
 	time.Sleep(time.Second)
 
-	usersSessionsDB, err := userSession.GetByUserID(userID, 0, qtUserSessions)
+	usersSessionsDB, err := userSession.GetByUserIDActive(userID, 0, qtUserSessions)
 	require.NoError(t, err)
 	require.Equal(t, qtUserSessions, len(usersSessionsDB))
 
@@ -552,23 +551,7 @@ func TestUserSessionGetByID(t *testing.T) {
 
 	time.Sleep(time.Second)
 
-	usersSessionsDB, err = userSession.GetByUserID(userID, 0, qtUserSessions)
+	usersSessionsDB, err = userSession.GetByUserIDActive(userID, 0, qtUserSessions)
 	require.NoError(t, err)
-	require.Equal(t, qtUserSessions, len(usersSessionsDB))
-
-	usersIDDB = make([]model.ID, 0, qtUserSessions)
-	idDB = make([]model.ID, 0, qtUserSessions)
-
-	for _, userSessionTemp := range usersSessionsDB {
-		usersIDDB = append(usersIDDB, userSessionTemp.UserID)
-		idDB = append(idDB, userSessionTemp.ID)
-	}
-
-	for _, userIDDB := range usersIDDB {
-		require.Equal(t, userIDDB, userID)
-	}
-
-	for _, id := range userSessionsID {
-		require.True(t, slices.Contains(idDB, id))
-	}
+	require.Equal(t, 0, len(usersSessionsDB))
 }

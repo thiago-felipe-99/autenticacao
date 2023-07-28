@@ -24,7 +24,7 @@ func createUserWithRoles(roles []string) model.User {
 		CreatedAt: time.Now(),
 		CreatedBy: model.NewID(),
 		DeletedAt: time.Time{},
-		DeletedBy: model.ID{},
+		DeletedBy: model.EmptyID,
 	}
 }
 
@@ -156,7 +156,7 @@ func TestUserGetAll(t *testing.T) { //nolint:dupl
 
 	users, err := user.GetAll(0, qtUsers)
 	assert.NoError(t, err)
-	assert.Equal(t, users, []model.User{})
+	assert.Equal(t, users, model.EmptyUsers)
 
 	for i := 0; i < qtUsers; i++ {
 		tempUser := createUser()
@@ -220,7 +220,7 @@ func TestUserGetByRoles(t *testing.T) {
 
 	users, err := user.GetAll(0, qtUsers)
 	assert.NoError(t, err)
-	assert.Equal(t, users, []model.User{})
+	assert.Equal(t, users, model.EmptyUsers)
 
 	qtRoles := gofakeit.Number(10, 20)
 	roles := make([]string, 0, qtRoles)

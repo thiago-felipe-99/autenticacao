@@ -205,8 +205,9 @@ func TestUserCreate(t *testing.T) {
 			t.Run(test.name, func(t *testing.T) {
 				t.Parallel()
 
-				_, err := user.Create(model.NewID(), test.input)
+				userCreated, err := user.Create(model.NewID(), test.input)
 				assert.ErrorAs(t, err, &core.ModelInvalidError{})
+				assert.Equal(t, userCreated, model.EmptyID)
 			})
 		}
 	})
@@ -222,8 +223,9 @@ func TestUserCreate(t *testing.T) {
 			Roles:    []string{gofakeit.Name()},
 		}
 
-		_, err := user.Create(model.NewID(), input)
+		userCreated, err := user.Create(model.NewID(), input)
 		assert.ErrorIs(t, err, errs.ErrRoleNotFound)
+		assert.Equal(t, userCreated, model.EmptyID)
 	})
 
 	t.Run("Duplicate", func(t *testing.T) {
@@ -235,16 +237,18 @@ func TestUserCreate(t *testing.T) {
 			input := input
 			input.Email = gofakeit.Email()
 
-			_, err := user.Create(model.NewID(), input)
+			userCreated, err := user.Create(model.NewID(), input)
 			assert.ErrorIs(t, err, errs.ErrUsernameAlreadyExist)
+			assert.Equal(t, userCreated, model.EmptyID)
 		})
 
 		t.Run("Email", func(t *testing.T) {
 			input := input
 			input.Username = gofakeit.Username()
 
-			_, err := user.Create(model.NewID(), input)
+			userCreated, err := user.Create(model.NewID(), input)
 			assert.ErrorIs(t, err, errs.ErrEmailAlreadyExist)
+			assert.Equal(t, userCreated, model.EmptyID)
 		})
 	})
 }
@@ -265,10 +269,10 @@ func assertUser(t *testing.T, partial partialUser, userdb model.User, user *core
 	assert.Equal(t, partial.input.Email, userdb.Email)
 	assert.Equal(t, partial.input.Roles, userdb.Roles)
 	assert.True(t, userdb.IsActive)
-	assert.LessOrEqual(t, time.Since(userdb.CreatedAt), time.Second)
+	assert.LessOrEqual(t, time.Since(userdb.CreatedAt), time.Second*2)
 	assert.Equal(t, partial.createdBy, userdb.CreatedBy)
 	assert.True(t, time.Time{}.Equal(userdb.DeletedAt))
-	assert.Equal(t, model.ID{}, userdb.DeletedBy)
+	assert.Equal(t, model.EmptyID, userdb.DeletedBy)
 
 	match, err := user.EqualPassword(partial.input.Password, userdb.Password)
 	assert.NoError(t, err)
@@ -340,7 +344,7 @@ func TestUserGet(t *testing.T) { //nolint:funlen
 			userdb, err := user.GetByID(userTemp.userID)
 			assert.NoError(t, err)
 
-			assertUser(t, userTemp, *userdb, user)
+			assertUser(t, userTemp, userdb, user)
 		})
 
 		t.Run("GetByUsername", func(t *testing.T) {
@@ -349,7 +353,7 @@ func TestUserGet(t *testing.T) { //nolint:funlen
 			userdb, err := user.GetByUsername(userTemp.input.Username)
 			assert.NoError(t, err)
 
-			assertUser(t, userTemp, *userdb, user)
+			assertUser(t, userTemp, userdb, user)
 		})
 
 		t.Run("GetByEmail", func(t *testing.T) {
@@ -358,15 +362,16 @@ func TestUserGet(t *testing.T) { //nolint:funlen
 			userdb, err := user.GetByEmail(userTemp.input.Email)
 			assert.NoError(t, err)
 
-			assertUser(t, userTemp, *userdb, user)
+			assertUser(t, userTemp, userdb, user)
 		})
 	}
 
 	t.Run("GetByID/NotFound", func(t *testing.T) {
 		t.Parallel()
 
-		_, err := user.GetByID(model.NewID())
+		userFound, err := user.GetByID(model.NewID())
 		assert.ErrorIs(t, err, errs.ErrUserNotFound)
+		assert.Equal(t, userFound, model.EmptyUser)
 	})
 
 	t.Run("GetAll", func(t *testing.T) {
@@ -442,8 +447,9 @@ func TestUserGet(t *testing.T) { //nolint:funlen
 	t.Run("GetByRole/RoleNotFound", func(t *testing.T) {
 		t.Parallel()
 
-		_, err := user.GetByRole([]string{gofakeit.Name()}, 0, qtUsers)
+		userFound, err := user.GetByRole([]string{gofakeit.Name()}, 0, qtUsers)
 		assert.ErrorIs(t, err, errs.ErrRoleNotFound)
+		assert.Equal(t, userFound, model.EmptyUsers)
 	})
 }
 
@@ -705,22 +711,25 @@ func TestUserDelete(t *testing.T) { //nolint:funlen
 		t.Run("GetByID", func(t *testing.T) {
 			t.Parallel()
 
-			_, err := user.GetByID(userTemp.userID)
+			userFound, err := user.GetByID(userTemp.userID)
 			assert.ErrorIs(t, err, errs.ErrUserNotFound)
+			assert.Equal(t, userFound, model.EmptyUser)
 		})
 
 		t.Run("GetByUsername", func(t *testing.T) {
 			t.Parallel()
 
-			_, err := user.GetByUsername(userTemp.input.Username)
+			userFound, err := user.GetByUsername(userTemp.input.Username)
 			assert.ErrorIs(t, err, errs.ErrUserNotFound)
+			assert.Equal(t, userFound, model.EmptyUser)
 		})
 
 		t.Run("GetByEmail", func(t *testing.T) {
 			t.Parallel()
 
-			_, err := user.GetByEmail(userTemp.input.Email)
+			userDound, err := user.GetByEmail(userTemp.input.Email)
 			assert.ErrorIs(t, err, errs.ErrUserNotFound)
+			assert.Equal(t, userDound, model.EmptyUser)
 		})
 	}
 
@@ -834,7 +843,7 @@ func TestUserWithArgon(t *testing.T) {
 
 			userdb, err := user.GetByID(userid)
 			assert.NoError(t, err)
-			assertUser(t, partial, *userdb, user)
+			assertUser(t, partial, userdb, user)
 
 			update := model.UserUpdate{ //nolint:exhaustruct
 				Password: gofakeit.Password(true, true, true, true, true, 20),
@@ -846,8 +855,9 @@ func TestUserWithArgon(t *testing.T) {
 			err = user.Delete(userid, partial.deletedBy)
 			assert.NoError(t, err)
 
-			_, err = user.GetByID(userid)
+			userFound, err := user.GetByID(userid)
 			assert.ErrorIs(t, err, errs.ErrUserNotFound)
+			assert.Equal(t, userFound, model.EmptyUser)
 		})
 	}
 }

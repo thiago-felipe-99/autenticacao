@@ -18,7 +18,7 @@ func createRole() model.Role {
 		CreatedAt: time.Now(),
 		CreatedBy: model.NewID(),
 		DeletedAt: time.Time{},
-		DeletedBy: model.ID{},
+		DeletedBy: model.EmptyID,
 	}
 }
 
@@ -198,7 +198,7 @@ func TestRoleGetAll(t *testing.T) { //nolint:dupl
 
 	roles, err := role.GetAll(0, qtRoles)
 	assert.NoError(t, err)
-	assert.Equal(t, roles, []model.Role{})
+	assert.Equal(t, roles, model.EmptyRoles)
 
 	for i := 0; i < qtRoles; i++ {
 		tempRole := createRole()

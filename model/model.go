@@ -11,6 +11,8 @@ import (
 
 type ID uuid.UUID
 
+var EmptyID = ID{} //nolint:gochecknoglobals
+
 func (id ID) String() string {
 	return uuid.UUID(id).String()
 }
@@ -54,6 +56,11 @@ type Role struct {
 	DeletedAt time.Time `json:"deletedAt,omitempty" db:"deleted_at"`
 	DeletedBy ID        `json:"deletedBy,omitempty" db:"deleted_by"`
 }
+
+var (
+	EmptyRole  = Role{}   //nolint:exhaustruct,gochecknoglobals
+	EmptyRoles = []Role{} //nolint:gochecknoglobals
+)
 
 type UserPartial struct {
 	Name     string   `config:"name"     json:"name"     validate:"required,max=255"`
@@ -102,6 +109,11 @@ func (u *User) Postgres() *UserPostgres {
 	}
 }
 
+var (
+	EmptyUser  = User{}   //nolint:exhaustruct,gochecknoglobals
+	EmptyUsers = []User{} //nolint:gochecknoglobals
+)
+
 type UserPostgres struct {
 	ID        ID             `db:"id"`
 	Name      string         `db:"name"`
@@ -144,3 +156,5 @@ type UserSession struct {
 	CreateaAt time.Time `json:"createdAt"           db:"created_at"`
 	DeletedAt time.Time `json:"deletedAt,omitempty" db:"deleted_at"`
 }
+
+var EmptyUserSession = UserSession{} //nolint:exhaustruct,gochecknoglobals

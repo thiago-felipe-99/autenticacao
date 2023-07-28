@@ -133,8 +133,9 @@ func TestUserSessionCreate(t *testing.T) { //nolint:funlen
 				t.Run(input.name, func(t *testing.T) {
 					t.Parallel()
 
-					_, err := userSession.Create(input.input)
+					userSessionCreated, err := userSession.Create(input.input)
 					assert.ErrorAs(t, err, &core.ModelInvalidError{})
+					assert.Equal(t, userSessionCreated, model.EmptyUserSession)
 				})
 			}
 		})
@@ -168,8 +169,9 @@ func TestUserSessionCreate(t *testing.T) { //nolint:funlen
 				t.Run(input.name, func(t *testing.T) {
 					t.Parallel()
 
-					_, err := userSession.Create(input.input)
+					userSessionCreated, err := userSession.Create(input.input)
 					assert.ErrorIs(t, err, errs.ErrPasswordDoesNotMatch)
+					assert.Equal(t, userSessionCreated, model.EmptyUserSession)
 				})
 			}
 		})
@@ -203,8 +205,9 @@ func TestUserSessionCreate(t *testing.T) { //nolint:funlen
 				t.Run(input.name, func(t *testing.T) {
 					t.Parallel()
 
-					_, err := userSession.Create(input.input)
+					userSessionCreated, err := userSession.Create(input.input)
 					assert.ErrorIs(t, err, errs.ErrUserNotFound)
+					assert.Equal(t, userSessionCreated, model.EmptyUserSession)
 				})
 			}
 		})
@@ -284,8 +287,8 @@ func TestUserSessionRefresh(t *testing.T) {
 			t.Parallel()
 
 			userSessionTemp, err := userSession.Refresh(model.NewID())
-			assert.Nil(t, userSessionTemp)
 			assert.ErrorIs(t, err, errs.ErrUserSessionNotFoud)
+			assert.Equal(t, userSessionTemp, model.EmptyUserSession)
 		})
 	}
 }
@@ -363,8 +366,8 @@ func TestUserSessionDelete(t *testing.T) {
 			t.Parallel()
 
 			userSessionTemp, err := userSession.Delete(model.NewID())
-			assert.Nil(t, userSessionTemp)
 			assert.ErrorIs(t, err, errs.ErrUserSessionNotFoud)
+			assert.Equal(t, userSessionTemp, model.EmptyUserSession)
 		})
 	}
 }

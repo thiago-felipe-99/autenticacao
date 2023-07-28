@@ -22,43 +22,43 @@ type User struct {
 	argonEnable bool
 }
 
-func (u *User) GetByID(id model.ID) (*model.User, error) {
+func (u *User) GetByID(id model.ID) (model.User, error) {
 	user, err := u.database.GetByID(id)
 	if err != nil {
 		if errors.Is(err, errs.ErrUserNotFound) {
-			return nil, errs.ErrUserNotFound
+			return model.EmptyUser, errs.ErrUserNotFound
 		}
 
-		return nil, fmt.Errorf("error on getting user from database: %w", err)
+		return model.EmptyUser, fmt.Errorf("error on getting user from database: %w", err)
 	}
 
-	return user, nil
+	return *user, nil
 }
 
-func (u *User) GetByUsername(username string) (*model.User, error) {
+func (u *User) GetByUsername(username string) (model.User, error) {
 	user, err := u.database.GetByUsername(username)
 	if err != nil {
 		if errors.Is(err, errs.ErrUserNotFound) {
-			return nil, errs.ErrUserNotFound
+			return model.EmptyUser, errs.ErrUserNotFound
 		}
 
-		return nil, fmt.Errorf("error on getting user from database: %w", err)
+		return model.EmptyUser, fmt.Errorf("error on getting user from database: %w", err)
 	}
 
-	return user, nil
+	return *user, nil
 }
 
-func (u *User) GetByEmail(email string) (*model.User, error) {
+func (u *User) GetByEmail(email string) (model.User, error) {
 	user, err := u.database.GetByEmail(email)
 	if err != nil {
 		if errors.Is(err, errs.ErrUserNotFound) {
-			return nil, errs.ErrUserNotFound
+			return model.EmptyUser, errs.ErrUserNotFound
 		}
 
-		return nil, fmt.Errorf("error on getting user from database: %w", err)
+		return model.EmptyUser, fmt.Errorf("error on getting user from database: %w", err)
 	}
 
-	return user, nil
+	return *user, nil
 }
 
 func (u *User) GetAll(paginate int, qt int) ([]model.User, error) {
@@ -73,16 +73,16 @@ func (u *User) GetAll(paginate int, qt int) ([]model.User, error) {
 func (u *User) GetByRole(roles []string, paginate int, qt int) ([]model.User, error) {
 	exist, err := u.role.Exist(roles)
 	if err != nil {
-		return nil, err
+		return model.EmptyUsers, err
 	}
 
 	if !exist {
-		return nil, errs.ErrRoleNotFound
+		return model.EmptyUsers, errs.ErrRoleNotFound
 	}
 
 	users, err := u.database.GetByRoles(roles, paginate, qt)
 	if err != nil {
-		return nil, fmt.Errorf("error on getting user from database: %w", err)
+		return model.EmptyUsers, fmt.Errorf("error on getting user from database: %w", err)
 	}
 
 	return users, nil
@@ -91,39 +91,39 @@ func (u *User) GetByRole(roles []string, paginate int, qt int) ([]model.User, er
 func (u *User) Create(createdBy model.ID, partial model.UserPartial) (model.ID, error) {
 	err := validate(u.validate, partial)
 	if err != nil {
-		return model.ID{}, err
+		return model.EmptyID, err
 	}
 
 	exist, err := u.role.Exist(partial.Roles)
 	if err != nil {
-		return model.ID{}, err
+		return model.EmptyID, err
 	}
 
 	if !exist {
-		return model.ID{}, errs.ErrRoleNotFound
+		return model.EmptyID, errs.ErrRoleNotFound
 	}
 
 	_, err = u.GetByUsername(partial.Username)
 	if err != nil && !errors.Is(err, errs.ErrUserNotFound) {
-		return model.ID{}, err
+		return model.EmptyID, err
 	}
 
 	if err == nil {
-		return model.ID{}, errs.ErrUsernameAlreadyExist
+		return model.EmptyID, errs.ErrUsernameAlreadyExist
 	}
 
 	_, err = u.GetByEmail(partial.Email)
 	if err != nil && !errors.Is(err, errs.ErrUserNotFound) {
-		return model.ID{}, err
+		return model.EmptyID, err
 	}
 
 	if err == nil {
-		return model.ID{}, errs.ErrEmailAlreadyExist
+		return model.EmptyID, errs.ErrEmailAlreadyExist
 	}
 
 	hash, err := u.createHash(partial.Password)
 	if err != nil {
-		return model.ID{}, fmt.Errorf("error creating password hash: %w", err)
+		return model.EmptyID, fmt.Errorf("error creating password hash: %w", err)
 	}
 
 	roles := make([]string, 0, len(partial.Roles))
@@ -144,12 +144,12 @@ func (u *User) Create(createdBy model.ID, partial model.UserPartial) (model.ID, 
 		CreatedAt: time.Now(),
 		CreatedBy: createdBy,
 		DeletedAt: time.Time{},
-		DeletedBy: model.ID{},
+		DeletedBy: model.EmptyID,
 	}
 
 	err = u.database.Create(user)
 	if err != nil {
-		return model.ID{}, fmt.Errorf("error creating user in the database: %w", err)
+		return model.EmptyID, fmt.Errorf("error creating user in the database: %w", err)
 	}
 
 	return user.ID, nil
@@ -222,7 +222,7 @@ func (u *User) Update(userID model.ID, partial model.UserUpdate) error {
 		user.IsActive = *partial.IsActive
 	}
 
-	err = u.database.Update(*user)
+	err = u.database.Update(user)
 	if err != nil {
 		return fmt.Errorf("error creating user in the database: %w", err)
 	}

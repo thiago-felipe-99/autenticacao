@@ -40,13 +40,13 @@ func (u *UserSession) GetByUserID(
 	return userSessions, nil
 }
 
-func (u *UserSession) Create(partial model.UserSessionPartial) (*model.UserSession, error) {
+func (u *UserSession) Create(partial model.UserSessionPartial) (model.UserSession, error) {
 	err := validate(u.validator, partial)
 	if err != nil {
-		return nil, err
+		return model.EmptyUserSession, err
 	}
 
-	var user *model.User
+	var user model.User
 
 	if partial.Username != "" {
 		user, err = u.user.GetByUsername(partial.Username)
@@ -55,16 +55,16 @@ func (u *UserSession) Create(partial model.UserSessionPartial) (*model.UserSessi
 	}
 
 	if err != nil {
-		return nil, err
+		return model.EmptyUserSession, err
 	}
 
 	equal, err := u.user.EqualPassword(partial.Password, user.Password)
 	if err != nil {
-		return nil, fmt.Errorf("erro checking password: %w", err)
+		return model.EmptyUserSession, fmt.Errorf("erro checking password: %w", err)
 	}
 
 	if !equal {
-		return nil, errs.ErrPasswordDoesNotMatch
+		return model.EmptyUserSession, errs.ErrPasswordDoesNotMatch
 	}
 
 	userSession := model.UserSession{
@@ -76,41 +76,41 @@ func (u *UserSession) Create(partial model.UserSessionPartial) (*model.UserSessi
 
 	err = u.database.Create(userSession, u.expires)
 	if err != nil {
-		return nil, fmt.Errorf("error creating user session on database: %w", err)
-	}
-
-	return &userSession, nil
-}
-
-func (u *UserSession) Delete(id model.ID) (*model.UserSession, error) {
-	userSession, err := u.database.Delete(id, time.Now())
-	if err != nil {
-		if errors.Is(err, errs.ErrUserSessionNotFoud) {
-			return nil, errs.ErrUserSessionNotFoud
-		}
-
-		return nil, fmt.Errorf("error deleting user session from database: %w", err)
+		return userSession, fmt.Errorf("error creating user session on database: %w", err)
 	}
 
 	return userSession, nil
 }
 
-func (u *UserSession) Refresh(id model.ID) (*model.UserSession, error) {
-	userSession, err := u.Delete(id)
+func (u *UserSession) Delete(id model.ID) (model.UserSession, error) {
+	userSession, err := u.database.Delete(id, time.Now())
 	if err != nil {
-		return nil, err
+		if errors.Is(err, errs.ErrUserSessionNotFoud) {
+			return model.EmptyUserSession, errs.ErrUserSessionNotFoud
+		}
+
+		return model.EmptyUserSession, fmt.Errorf("error deleting user session from database: %w", err)
 	}
 
-	userSession = &model.UserSession{
+	return *userSession, nil
+}
+
+func (u *UserSession) Refresh(id model.ID) (model.UserSession, error) {
+	userSession, err := u.Delete(id)
+	if err != nil {
+		return model.EmptyUserSession, err
+	}
+
+	userSession = model.UserSession{
 		ID:        model.NewID(),
 		UserID:    userSession.UserID,
 		CreateaAt: time.Now(),
 		DeletedAt: time.Time{},
 	}
 
-	err = u.database.Create(*userSession, u.expires)
+	err = u.database.Create(userSession, u.expires)
 	if err != nil {
-		return nil, fmt.Errorf("error creating user session on database: %w", err)
+		return model.EmptyUserSession, fmt.Errorf("error creating user session on database: %w", err)
 	}
 
 	return userSession, nil

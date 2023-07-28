@@ -67,7 +67,7 @@ func (r *Role) Create(createdBy model.ID, partial model.RolePartial) error {
 		CreatedAt: time.Now(),
 		CreatedBy: createdBy,
 		DeletedAt: time.Time{},
-		DeletedBy: model.ID{},
+		DeletedBy: model.EmptyID,
 	}
 
 	err = r.database.Create(role)

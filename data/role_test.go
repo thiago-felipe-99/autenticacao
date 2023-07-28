@@ -37,15 +37,6 @@ func TestRoleCreate(t *testing.T) {
 			require.NoError(t, err)
 		})
 	}
-
-	t.Run("WrongDB", func(t *testing.T) {
-		t.Parallel()
-
-		role := data.NewRoleSQL(createWrongDB(t))
-
-		err := role.Create(createRole())
-		require.ErrorContains(t, err, "no such host")
-	})
 }
 
 func checkRole(t *testing.T, expected, found model.Role) {
@@ -80,16 +71,6 @@ func TestRoleGetByName(t *testing.T) {
 		})
 	}
 
-	t.Run("WrongDB", func(t *testing.T) {
-		t.Parallel()
-
-		role := data.NewRoleSQL(createWrongDB(t))
-
-		found, err := role.GetByName("invalid-role")
-		require.ErrorContains(t, err, "no such host")
-		require.Equal(t, found, model.EmptyRole)
-	})
-
 	t.Run("NotFound", func(t *testing.T) {
 		t.Parallel()
 
@@ -120,16 +101,6 @@ func TestRoleExist(t *testing.T) {
 			require.True(t, found)
 		})
 	}
-
-	t.Run("WrongDB", func(t *testing.T) {
-		t.Parallel()
-
-		role := data.NewRoleSQL(createWrongDB(t))
-
-		found, err := role.Exist([]string{"invalid-role"})
-		require.ErrorContains(t, err, "no such host")
-		require.False(t, found)
-	})
 
 	t.Run("NotFound", func(t *testing.T) {
 		t.Parallel()
@@ -240,16 +211,6 @@ func TestRoleGetAll(t *testing.T) { //nolint:dupl
 
 		checkRole(t, createdRole, roles[index])
 	}
-
-	t.Run("WrongDB", func(t *testing.T) {
-		t.Parallel()
-
-		role := data.NewRoleSQL(createWrongDB(t))
-
-		roles, err := role.GetAll(0, qtRoles)
-		require.ErrorContains(t, err, "no such host")
-		require.Equal(t, roles, model.EmptyRoles)
-	})
 }
 
 func TestRoleDelete(t *testing.T) {
@@ -288,15 +249,6 @@ func TestRoleDelete(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("WrongDB", func(t *testing.T) {
-		t.Parallel()
-
-		role := data.NewRoleSQL(createWrongDB(t))
-
-		err := role.Delete(gofakeit.Name(), time.Now(), model.NewID())
-		require.ErrorContains(t, err, "no such host")
-	})
-
 	t.Run("TableRoleDoesNotExist", func(t *testing.T) {
 		t.Parallel()
 
@@ -324,4 +276,28 @@ func TestRoleDelete(t *testing.T) {
 		err = role.Delete(gofakeit.Name(), time.Now(), model.NewID())
 		require.ErrorContains(t, err, "relation \"users\" does not exist")
 	})
+}
+
+func TestRoleWrongDB(t *testing.T) {
+	t.Parallel()
+
+	role := data.NewRoleSQL(createWrongDB(t))
+
+	err := role.Create(createRole())
+	require.ErrorContains(t, err, "no such host")
+
+	roleTemp, err := role.GetByName("invalid-role")
+	require.ErrorContains(t, err, "no such host")
+	require.Equal(t, roleTemp, model.EmptyRole)
+
+	found, err := role.Exist([]string{"invalid-role"})
+	require.ErrorContains(t, err, "no such host")
+	require.False(t, found)
+
+	roles, err := role.GetAll(0, 100)
+	require.ErrorContains(t, err, "no such host")
+	require.Equal(t, roles, model.EmptyRoles)
+
+	err = role.Delete(gofakeit.Name(), time.Now(), model.NewID())
+	require.ErrorContains(t, err, "no such host")
 }

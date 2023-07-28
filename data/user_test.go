@@ -54,15 +54,6 @@ func TestUserCreate(t *testing.T) {
 			require.NoError(t, err)
 		})
 	}
-
-	t.Run("WrongDB", func(t *testing.T) {
-		t.Parallel()
-
-		user := data.NewUserSQL(createWrongDB(t))
-
-		err := user.Create(createUser())
-		require.ErrorContains(t, err, "no such host")
-	})
 }
 
 func checkUser(t *testing.T, expected, found model.User) {
@@ -110,24 +101,6 @@ func TestGetBy(t *testing.T) {
 			checkUser(t, tempUser, found)
 		})
 	}
-
-	t.Run("WrongDB", func(t *testing.T) {
-		t.Parallel()
-
-		user := data.NewUserSQL(createWrongDB(t))
-
-		found, err := user.GetByID(model.NewID())
-		require.ErrorContains(t, err, "no such host")
-		require.Equal(t, found, model.EmptyUser)
-
-		found, err = user.GetByUsername("invalid-username")
-		require.ErrorContains(t, err, "no such host")
-		require.Equal(t, found, model.EmptyUser)
-
-		found, err = user.GetByEmail("invalid-email")
-		require.ErrorContains(t, err, "no such host")
-		require.Equal(t, found, model.EmptyUser)
-	})
 
 	t.Run("NotFound", func(t *testing.T) {
 		t.Parallel()
@@ -198,16 +171,6 @@ func TestUserGetAll(t *testing.T) { //nolint:dupl
 
 		checkUser(t, createdUser, users[index])
 	}
-
-	t.Run("WrongDB", func(t *testing.T) {
-		t.Parallel()
-
-		user := data.NewUserSQL(createWrongDB(t))
-
-		roles, err := user.GetAll(0, qtUsers)
-		require.ErrorContains(t, err, "no such host")
-		require.Equal(t, roles, model.EmptyUsers)
-	})
 }
 
 func TestUserGetByRoles(t *testing.T) {
@@ -269,16 +232,6 @@ func TestUserGetByRoles(t *testing.T) {
 
 		checkUser(t, createdUser, users[index])
 	}
-
-	t.Run("WrongDB", func(t *testing.T) {
-		t.Parallel()
-
-		user := data.NewUserSQL(createWrongDB(t))
-
-		roles, err := user.GetByRoles(roles, 0, qtUsers)
-		require.ErrorContains(t, err, "no such host")
-		require.Equal(t, roles, model.EmptyUsers)
-	})
 }
 
 func TestUserDelete(t *testing.T) {
@@ -319,15 +272,6 @@ func TestUserDelete(t *testing.T) {
 
 		err := user.Delete(model.NewID(), time.Now(), model.NewID())
 		require.NoError(t, err)
-	})
-
-	t.Run("WrongDB", func(t *testing.T) {
-		t.Parallel()
-
-		user := data.NewUserSQL(createWrongDB(t))
-
-		err := user.Delete(model.NewID(), time.Now(), model.NewID())
-		require.ErrorContains(t, err, "no such host")
 	})
 }
 
@@ -391,13 +335,39 @@ func TestUserUpdate(t *testing.T) {
 		err := user.Update(createUser())
 		require.NoError(t, err)
 	})
+}
 
-	t.Run("WrongDB", func(t *testing.T) {
-		t.Parallel()
+func TestUserWrongDB(t *testing.T) {
+	t.Parallel()
 
-		user := data.NewUserSQL(createWrongDB(t))
+	user := data.NewUserSQL(createWrongDB(t))
 
-		err := user.Update(createUser())
-		require.ErrorContains(t, err, "no such host")
-	})
+	err := user.Create(createUser())
+	require.ErrorContains(t, err, "no such host")
+
+	err = user.Update(createUser())
+	require.ErrorContains(t, err, "no such host")
+
+	err = user.Delete(model.NewID(), time.Now(), model.NewID())
+	require.ErrorContains(t, err, "no such host")
+
+	found, err := user.GetByID(model.NewID())
+	require.ErrorContains(t, err, "no such host")
+	require.Equal(t, found, model.EmptyUser)
+
+	found, err = user.GetByUsername("invalid-username")
+	require.ErrorContains(t, err, "no such host")
+	require.Equal(t, found, model.EmptyUser)
+
+	found, err = user.GetByEmail("invalid-email")
+	require.ErrorContains(t, err, "no such host")
+	require.Equal(t, found, model.EmptyUser)
+
+	roles, err := user.GetAll(0, 100)
+	require.ErrorContains(t, err, "no such host")
+	require.Equal(t, roles, model.EmptyUsers)
+
+	roles, err = user.GetByRoles([]string{gofakeit.Name()}, 0, 100)
+	require.ErrorContains(t, err, "no such host")
+	require.Equal(t, roles, model.EmptyUsers)
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/go-playground/validator/v10"
 	"github.com/redis/go-redis/v9"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/thiago-felipe-99/autenticacao/core"
 	"github.com/thiago-felipe-99/autenticacao/data"
 	"github.com/thiago-felipe-99/autenticacao/errs"
@@ -21,7 +21,7 @@ func TestUserSessionCreate(t *testing.T) { //nolint:funlen
 	db := createTempDB(t, "user_session_create")
 	redisClient := redis.NewClient(&redis.Options{ //nolint:exhaustruct
 		Addr:     "localhost:6379",
-		Password: "qt4BLAnrrNSZp2ssRMkLzZjnaZQkcL22",
+		Password: "redis",
 		DB:       0,
 	})
 	buffer := 30
@@ -38,7 +38,7 @@ func TestUserSessionCreate(t *testing.T) { //nolint:funlen
 	)
 
 	err := userSessionRedis.ConsumeQueues(time.Second, buffer/2)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	qtRoles := 5
 	rolesTemp := make([]string, qtRoles)
@@ -92,11 +92,11 @@ func TestUserSessionCreate(t *testing.T) { //nolint:funlen
 					t.Parallel()
 
 					userSessionTemp, err := userSession.Create(input.input)
-					assert.NoError(t, err)
+					require.NoError(t, err)
 
-					assert.Equal(t, userID, userSessionTemp.UserID)
-					assert.LessOrEqual(t, time.Since(userSessionTemp.CreateaAt), time.Second)
-					assert.Equal(t, time.Time{}, userSessionTemp.DeletedAt)
+					require.Equal(t, userID, userSessionTemp.UserID)
+					require.LessOrEqual(t, time.Since(userSessionTemp.CreateaAt), time.Second)
+					require.Equal(t, time.Time{}, userSessionTemp.DeletedAt)
 				})
 			}
 		})
@@ -134,8 +134,8 @@ func TestUserSessionCreate(t *testing.T) { //nolint:funlen
 					t.Parallel()
 
 					userSessionCreated, err := userSession.Create(input.input)
-					assert.ErrorAs(t, err, &core.ModelInvalidError{})
-					assert.Equal(t, userSessionCreated, model.EmptyUserSession)
+					require.ErrorAs(t, err, &core.ModelInvalidError{})
+					require.Equal(t, userSessionCreated, model.EmptyUserSession)
 				})
 			}
 		})
@@ -170,8 +170,8 @@ func TestUserSessionCreate(t *testing.T) { //nolint:funlen
 					t.Parallel()
 
 					userSessionCreated, err := userSession.Create(input.input)
-					assert.ErrorIs(t, err, errs.ErrPasswordDoesNotMatch)
-					assert.Equal(t, userSessionCreated, model.EmptyUserSession)
+					require.ErrorIs(t, err, errs.ErrPasswordDoesNotMatch)
+					require.Equal(t, userSessionCreated, model.EmptyUserSession)
 				})
 			}
 		})
@@ -206,8 +206,8 @@ func TestUserSessionCreate(t *testing.T) { //nolint:funlen
 					t.Parallel()
 
 					userSessionCreated, err := userSession.Create(input.input)
-					assert.ErrorIs(t, err, errs.ErrUserNotFound)
-					assert.Equal(t, userSessionCreated, model.EmptyUserSession)
+					require.ErrorIs(t, err, errs.ErrUserNotFound)
+					require.Equal(t, userSessionCreated, model.EmptyUserSession)
 				})
 			}
 		})
@@ -220,7 +220,7 @@ func TestUserSessionRefresh(t *testing.T) {
 	db := createTempDB(t, "user_session_refresh")
 	redisClient := redis.NewClient(&redis.Options{ //nolint:exhaustruct
 		Addr:     "localhost:6379",
-		Password: "qt4BLAnrrNSZp2ssRMkLzZjnaZQkcL22",
+		Password: "redis",
 		DB:       0,
 	})
 	buffer := 30
@@ -237,7 +237,7 @@ func TestUserSessionRefresh(t *testing.T) {
 	)
 
 	err := userSessionRedis.ConsumeQueues(time.Second, buffer/2)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	qtRoles := 5
 	rolesTemp := make([]string, qtRoles)
@@ -272,23 +272,23 @@ func TestUserSessionRefresh(t *testing.T) {
 			}
 
 			userSessionTemp1, err := userSession.Create(UserSessionPartial)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			userSessionTemp2, err := userSession.Refresh(userSessionTemp1.ID)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
-			assert.NotEqual(t, userSessionTemp1.ID, userSessionTemp2.ID)
-			assert.Equal(t, userID, userSessionTemp2.UserID)
-			assert.LessOrEqual(t, time.Since(userSessionTemp2.CreateaAt), time.Second)
-			assert.Equal(t, time.Time{}, userSessionTemp2.DeletedAt)
+			require.NotEqual(t, userSessionTemp1.ID, userSessionTemp2.ID)
+			require.Equal(t, userID, userSessionTemp2.UserID)
+			require.LessOrEqual(t, time.Since(userSessionTemp2.CreateaAt), time.Second)
+			require.Equal(t, time.Time{}, userSessionTemp2.DeletedAt)
 		})
 
 		t.Run("UserSessionNotFound", func(t *testing.T) {
 			t.Parallel()
 
 			userSessionTemp, err := userSession.Refresh(model.NewID())
-			assert.ErrorIs(t, err, errs.ErrUserSessionNotFoud)
-			assert.Equal(t, userSessionTemp, model.EmptyUserSession)
+			require.ErrorIs(t, err, errs.ErrUserSessionNotFoud)
+			require.Equal(t, userSessionTemp, model.EmptyUserSession)
 		})
 	}
 }
@@ -299,7 +299,7 @@ func TestUserSessionDelete(t *testing.T) {
 	db := createTempDB(t, "user_session_delete")
 	redisClient := redis.NewClient(&redis.Options{ //nolint:exhaustruct
 		Addr:     "localhost:6379",
-		Password: "qt4BLAnrrNSZp2ssRMkLzZjnaZQkcL22",
+		Password: "redis",
 		DB:       0,
 	})
 	buffer := 30
@@ -316,7 +316,7 @@ func TestUserSessionDelete(t *testing.T) {
 	)
 
 	err := userSessionRedis.ConsumeQueues(time.Second, buffer/2)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	qtRoles := 5
 	rolesTemp := make([]string, qtRoles)
@@ -351,23 +351,23 @@ func TestUserSessionDelete(t *testing.T) {
 			}
 
 			userSessionTemp1, err := userSession.Create(UserSessionPartial)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			userSessionTemp2, err := userSession.Delete(userSessionTemp1.ID)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
-			assert.Equal(t, userSessionTemp1.ID, userSessionTemp2.ID)
-			assert.Equal(t, userID, userSessionTemp2.UserID)
-			assert.LessOrEqual(t, time.Since(userSessionTemp2.CreateaAt), time.Second)
-			assert.LessOrEqual(t, time.Since(userSessionTemp2.DeletedAt), time.Second)
+			require.Equal(t, userSessionTemp1.ID, userSessionTemp2.ID)
+			require.Equal(t, userID, userSessionTemp2.UserID)
+			require.LessOrEqual(t, time.Since(userSessionTemp2.CreateaAt), time.Second)
+			require.LessOrEqual(t, time.Since(userSessionTemp2.DeletedAt), time.Second)
 		})
 
 		t.Run("UserSessionNotFound", func(t *testing.T) {
 			t.Parallel()
 
 			userSessionTemp, err := userSession.Delete(model.NewID())
-			assert.ErrorIs(t, err, errs.ErrUserSessionNotFoud)
-			assert.Equal(t, userSessionTemp, model.EmptyUserSession)
+			require.ErrorIs(t, err, errs.ErrUserSessionNotFoud)
+			require.Equal(t, userSessionTemp, model.EmptyUserSession)
 		})
 	}
 }
@@ -378,7 +378,7 @@ func TestUserSessionGetAll(t *testing.T) {
 	db := createTempDB(t, "user_session_get_all")
 	redisClient := redis.NewClient(&redis.Options{ //nolint:exhaustruct
 		Addr:     "localhost:6379",
-		Password: "qt4BLAnrrNSZp2ssRMkLzZjnaZQkcL22",
+		Password: "redis",
 		DB:       0,
 	})
 	buffer := 30
@@ -395,7 +395,7 @@ func TestUserSessionGetAll(t *testing.T) {
 	)
 
 	err := userSessionRedis.ConsumeQueues(time.Second, buffer/2)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	qtRoles := 5
 	rolesTemp := make([]string, qtRoles)
@@ -418,7 +418,7 @@ func TestUserSessionGetAll(t *testing.T) {
 		}
 
 		userSessionTemp, err := userSession.Create(UserSessionPartial)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		usersSessionsID = append(usersSessionsID, userSessionTemp.ID)
 	}
@@ -426,8 +426,8 @@ func TestUserSessionGetAll(t *testing.T) {
 	time.Sleep(time.Second)
 
 	usersSessionsDB, err := userSession.GetAll(0, qtUsers)
-	assert.NoError(t, err)
-	assert.Equal(t, qtUsers, len(usersSessionsDB))
+	require.NoError(t, err)
+	require.Equal(t, qtUsers, len(usersSessionsDB))
 
 	usersIDDB := make([]model.ID, 0, qtUsers)
 	idDB := make([]model.ID, 0, qtUsers)
@@ -438,21 +438,21 @@ func TestUserSessionGetAll(t *testing.T) {
 	}
 
 	for _, userID := range usersID {
-		assert.True(t, slices.Contains(usersIDDB, userID))
+		require.True(t, slices.Contains(usersIDDB, userID))
 	}
 
 	for _, id := range usersSessionsID {
-		assert.True(t, slices.Contains(idDB, id))
+		require.True(t, slices.Contains(idDB, id))
 
 		_, err := userSession.Delete(id)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 
 	time.Sleep(time.Second)
 
 	usersSessionsDB, err = userSession.GetAll(0, qtUsers)
-	assert.NoError(t, err)
-	assert.Equal(t, qtUsers, len(usersSessionsDB))
+	require.NoError(t, err)
+	require.Equal(t, qtUsers, len(usersSessionsDB))
 
 	usersIDDB = make([]model.ID, 0, qtUsers)
 	idDB = make([]model.ID, 0, qtUsers)
@@ -463,11 +463,11 @@ func TestUserSessionGetAll(t *testing.T) {
 	}
 
 	for _, userID := range usersID {
-		assert.True(t, slices.Contains(usersIDDB, userID))
+		require.True(t, slices.Contains(usersIDDB, userID))
 	}
 
 	for _, id := range usersSessionsID {
-		assert.True(t, slices.Contains(idDB, id))
+		require.True(t, slices.Contains(idDB, id))
 	}
 }
 
@@ -477,7 +477,7 @@ func TestUserSessionGetByID(t *testing.T) {
 	db := createTempDB(t, "user_session_get_all")
 	redisClient := redis.NewClient(&redis.Options{ //nolint:exhaustruct
 		Addr:     "localhost:6379",
-		Password: "qt4BLAnrrNSZp2ssRMkLzZjnaZQkcL22",
+		Password: "redis",
 		DB:       0,
 	})
 	buffer := 30
@@ -494,7 +494,7 @@ func TestUserSessionGetByID(t *testing.T) {
 	)
 
 	err := userSessionRedis.ConsumeQueues(time.Second, buffer/2)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	qtRoles := 5
 	rolesTemp := make([]string, qtRoles)
@@ -515,7 +515,7 @@ func TestUserSessionGetByID(t *testing.T) {
 
 	for i := 0; i < qtUserSessions; i++ {
 		userSessionTemp, err := userSession.Create(UserSessionPartial)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		userSessionsID = append(userSessionsID, userSessionTemp.ID)
 	}
@@ -523,8 +523,8 @@ func TestUserSessionGetByID(t *testing.T) {
 	time.Sleep(time.Second)
 
 	usersSessionsDB, err := userSession.GetByUserID(userID, 0, qtUserSessions)
-	assert.NoError(t, err)
-	assert.Equal(t, qtUserSessions, len(usersSessionsDB))
+	require.NoError(t, err)
+	require.Equal(t, qtUserSessions, len(usersSessionsDB))
 
 	usersIDDB := make([]model.ID, 0, qtUserSessions)
 	idDB := make([]model.ID, 0, qtUserSessions)
@@ -535,21 +535,21 @@ func TestUserSessionGetByID(t *testing.T) {
 	}
 
 	for _, userIDDB := range usersIDDB {
-		assert.Equal(t, userIDDB, userID)
+		require.Equal(t, userIDDB, userID)
 	}
 
 	for _, id := range userSessionsID {
-		assert.True(t, slices.Contains(idDB, id))
+		require.True(t, slices.Contains(idDB, id))
 
 		_, err := userSession.Delete(id)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 
 	time.Sleep(time.Second)
 
 	usersSessionsDB, err = userSession.GetByUserID(userID, 0, qtUserSessions)
-	assert.NoError(t, err)
-	assert.Equal(t, qtUserSessions, len(usersSessionsDB))
+	require.NoError(t, err)
+	require.Equal(t, qtUserSessions, len(usersSessionsDB))
 
 	usersIDDB = make([]model.ID, 0, qtUserSessions)
 	idDB = make([]model.ID, 0, qtUserSessions)
@@ -560,10 +560,10 @@ func TestUserSessionGetByID(t *testing.T) {
 	}
 
 	for _, userIDDB := range usersIDDB {
-		assert.Equal(t, userIDDB, userID)
+		require.Equal(t, userIDDB, userID)
 	}
 
 	for _, id := range userSessionsID {
-		assert.True(t, slices.Contains(idDB, id))
+		require.True(t, slices.Contains(idDB, id))
 	}
 }

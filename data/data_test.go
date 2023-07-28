@@ -10,7 +10,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func createTempDB(t *testing.T, name string) *sqlx.DB {
@@ -21,40 +21,40 @@ func createTempDB(t *testing.T, name string) *sqlx.DB {
 	urldb := url + "&dbname=" + dbname
 
 	db, err := sqlx.Connect("postgres", url)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = db.Exec("CREATE DATABASE " + dbname)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	err = db.Close()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	migrations, err := migrate.New("file://migrations", urldb)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	err = migrations.Up()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	sourceerr, err := migrations.Close()
-	assert.NoError(t, sourceerr)
-	assert.NoError(t, err)
+	require.NoError(t, sourceerr)
+	require.NoError(t, err)
 
 	db, err = sqlx.Connect("postgres", urldb)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		err = db.Close()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		// não é possível fazer drop do database conectado, precisa entrar no database padrão
 		db, err = sqlx.Connect("postgres", url)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		_, err = db.Exec("DROP DATABASE " + dbname)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		err = db.Close()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 
 	return db
@@ -66,7 +66,7 @@ func createWrongDB(t *testing.T) *sqlx.DB {
 	url := "postgres://wrong:wrong@wrong:5432/?sslmode=disable"
 
 	db, err := sqlx.Open("postgres", url)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	return db
 }

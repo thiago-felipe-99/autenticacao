@@ -7,7 +7,7 @@ import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/go-playground/validator/v10"
 	"github.com/jmoiron/sqlx"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/thiago-felipe-99/autenticacao/core"
 	"github.com/thiago-felipe-99/autenticacao/data"
 	"github.com/thiago-felipe-99/autenticacao/errs"
@@ -158,11 +158,11 @@ func createTempUser(
 	}
 
 	userID, err := user.Create(id, input)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		_, err = db.Exec("DELETE FROM users WHERE username=$1", input.Username)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 
 	return userID, id, input
@@ -206,8 +206,8 @@ func TestUserCreate(t *testing.T) {
 				t.Parallel()
 
 				userCreated, err := user.Create(model.NewID(), test.input)
-				assert.ErrorAs(t, err, &core.ModelInvalidError{})
-				assert.Equal(t, userCreated, model.EmptyID)
+				require.ErrorAs(t, err, &core.ModelInvalidError{})
+				require.Equal(t, userCreated, model.EmptyID)
 			})
 		}
 	})
@@ -224,8 +224,8 @@ func TestUserCreate(t *testing.T) {
 		}
 
 		userCreated, err := user.Create(model.NewID(), input)
-		assert.ErrorIs(t, err, errs.ErrRoleNotFound)
-		assert.Equal(t, userCreated, model.EmptyID)
+		require.ErrorIs(t, err, errs.ErrRoleNotFound)
+		require.Equal(t, userCreated, model.EmptyID)
 	})
 
 	t.Run("Duplicate", func(t *testing.T) {
@@ -238,8 +238,8 @@ func TestUserCreate(t *testing.T) {
 			input.Email = gofakeit.Email()
 
 			userCreated, err := user.Create(model.NewID(), input)
-			assert.ErrorIs(t, err, errs.ErrUsernameAlreadyExist)
-			assert.Equal(t, userCreated, model.EmptyID)
+			require.ErrorIs(t, err, errs.ErrUsernameAlreadyExist)
+			require.Equal(t, userCreated, model.EmptyID)
 		})
 
 		t.Run("Email", func(t *testing.T) {
@@ -247,8 +247,8 @@ func TestUserCreate(t *testing.T) {
 			input.Username = gofakeit.Username()
 
 			userCreated, err := user.Create(model.NewID(), input)
-			assert.ErrorIs(t, err, errs.ErrEmailAlreadyExist)
-			assert.Equal(t, userCreated, model.EmptyID)
+			require.ErrorIs(t, err, errs.ErrEmailAlreadyExist)
+			require.Equal(t, userCreated, model.EmptyID)
 		})
 	})
 }
@@ -260,23 +260,23 @@ type partialUser struct {
 	deletedBy model.ID
 }
 
-func assertUser(t *testing.T, partial partialUser, userdb model.User, user *core.User) {
+func requireUser(t *testing.T, partial partialUser, userdb model.User, user *core.User) {
 	t.Helper()
 
-	assert.Equal(t, partial.userID, userdb.ID)
-	assert.Equal(t, partial.input.Name, userdb.Name)
-	assert.Equal(t, partial.input.Username, userdb.Username)
-	assert.Equal(t, partial.input.Email, userdb.Email)
-	assert.Equal(t, partial.input.Roles, userdb.Roles)
-	assert.True(t, userdb.IsActive)
-	assert.LessOrEqual(t, time.Since(userdb.CreatedAt), time.Second*2)
-	assert.Equal(t, partial.createdBy, userdb.CreatedBy)
-	assert.True(t, time.Time{}.Equal(userdb.DeletedAt))
-	assert.Equal(t, model.EmptyID, userdb.DeletedBy)
+	require.Equal(t, partial.userID, userdb.ID)
+	require.Equal(t, partial.input.Name, userdb.Name)
+	require.Equal(t, partial.input.Username, userdb.Username)
+	require.Equal(t, partial.input.Email, userdb.Email)
+	require.Equal(t, partial.input.Roles, userdb.Roles)
+	require.True(t, userdb.IsActive)
+	require.LessOrEqual(t, time.Since(userdb.CreatedAt), time.Second*2)
+	require.Equal(t, partial.createdBy, userdb.CreatedBy)
+	require.True(t, time.Time{}.Equal(userdb.DeletedAt))
+	require.Equal(t, model.EmptyID, userdb.DeletedBy)
 
 	match, err := user.EqualPassword(partial.input.Password, userdb.Password)
-	assert.NoError(t, err)
-	assert.True(t, match)
+	require.NoError(t, err)
+	require.True(t, match)
 }
 
 func TestUserGet(t *testing.T) { //nolint:funlen
@@ -342,27 +342,27 @@ func TestUserGet(t *testing.T) { //nolint:funlen
 			t.Parallel()
 
 			userdb, err := user.GetByID(userTemp.userID)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
-			assertUser(t, userTemp, userdb, user)
+			requireUser(t, userTemp, userdb, user)
 		})
 
 		t.Run("GetByUsername", func(t *testing.T) {
 			t.Parallel()
 
 			userdb, err := user.GetByUsername(userTemp.input.Username)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
-			assertUser(t, userTemp, userdb, user)
+			requireUser(t, userTemp, userdb, user)
 		})
 
 		t.Run("GetByEmail", func(t *testing.T) {
 			t.Parallel()
 
 			userdb, err := user.GetByEmail(userTemp.input.Email)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
-			assertUser(t, userTemp, userdb, user)
+			requireUser(t, userTemp, userdb, user)
 		})
 	}
 
@@ -370,24 +370,24 @@ func TestUserGet(t *testing.T) { //nolint:funlen
 		t.Parallel()
 
 		userFound, err := user.GetByID(model.NewID())
-		assert.ErrorIs(t, err, errs.ErrUserNotFound)
-		assert.Equal(t, userFound, model.EmptyUser)
+		require.ErrorIs(t, err, errs.ErrUserNotFound)
+		require.Equal(t, userFound, model.EmptyUser)
 	})
 
 	t.Run("GetAll", func(t *testing.T) {
 		t.Parallel()
 
 		usersdb, err := user.GetAll(0, qtUsers)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
-		assert.Equal(t, qtUsers, len(usersdb))
+		require.Equal(t, qtUsers, len(usersdb))
 
 		for _, userdb := range usersdb {
 			index := slices.IndexFunc(usersTemp, func(p partialUser) bool {
 				return p.userID == userdb.ID
 			})
 
-			assertUser(t, usersTemp[index], userdb, user)
+			requireUser(t, usersTemp[index], userdb, user)
 		}
 	})
 
@@ -399,15 +399,15 @@ func TestUserGet(t *testing.T) { //nolint:funlen
 			t.Parallel()
 
 			usersdb, err := user.GetByRole([]string{role}, 0, qtUsers)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
-			assert.Equal(t, sum, len(usersdb))
+			require.Equal(t, sum, len(usersdb))
 
 			for _, userdb := range usersdb {
 				index := slices.IndexFunc(usersTemp, func(p partialUser) bool {
 					return p.userID == userdb.ID
 				})
-				assertUser(t, usersTemp[index], userdb, user)
+				requireUser(t, usersTemp[index], userdb, user)
 			}
 		})
 	}
@@ -428,15 +428,15 @@ func TestUserGet(t *testing.T) { //nolint:funlen
 
 					t.Run(role2, func(t *testing.T) {
 						usersdb, err := user.GetByRole([]string{role1, role2}, 0, qtUsers)
-						assert.NoError(t, err)
+						require.NoError(t, err)
 
-						assert.Equal(t, sum, len(usersdb))
+						require.Equal(t, sum, len(usersdb))
 
 						for _, userdb := range usersdb {
 							index := slices.IndexFunc(usersTemp, func(p partialUser) bool {
 								return p.userID == userdb.ID
 							})
-							assertUser(t, usersTemp[index], userdb, user)
+							requireUser(t, usersTemp[index], userdb, user)
 						}
 					})
 				}
@@ -448,12 +448,12 @@ func TestUserGet(t *testing.T) { //nolint:funlen
 		t.Parallel()
 
 		userFound, err := user.GetByRole([]string{gofakeit.Name()}, 0, qtUsers)
-		assert.ErrorIs(t, err, errs.ErrRoleNotFound)
-		assert.Equal(t, userFound, model.EmptyUsers)
+		require.ErrorIs(t, err, errs.ErrRoleNotFound)
+		require.Equal(t, userFound, model.EmptyUsers)
 	})
 }
 
-func assertUserUpdate(
+func requireUserUpdate(
 	t *testing.T,
 	update model.UserUpdate,
 	userTemp model.UserPartial,
@@ -463,44 +463,44 @@ func assertUserUpdate(
 	t.Helper()
 
 	userdb, err := user.GetByID(userid)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	if update.Name != "" {
-		assert.Equal(t, update.Name, userdb.Name)
+		require.Equal(t, update.Name, userdb.Name)
 	} else {
-		assert.Equal(t, userTemp.Name, userdb.Name)
+		require.Equal(t, userTemp.Name, userdb.Name)
 	}
 
 	if update.Username != "" {
-		assert.Equal(t, update.Username, userdb.Username)
+		require.Equal(t, update.Username, userdb.Username)
 	} else {
-		assert.Equal(t, userTemp.Username, userdb.Username)
+		require.Equal(t, userTemp.Username, userdb.Username)
 	}
 
 	if update.Email != "" {
-		assert.Equal(t, update.Email, userdb.Email)
+		require.Equal(t, update.Email, userdb.Email)
 	} else {
-		assert.Equal(t, userTemp.Email, userdb.Email)
+		require.Equal(t, userTemp.Email, userdb.Email)
 	}
 
 	if update.Roles != nil {
-		assert.Equal(t, update.Roles, userdb.Roles)
+		require.Equal(t, update.Roles, userdb.Roles)
 	} else {
-		assert.Equal(t, userTemp.Roles, userdb.Roles)
+		require.Equal(t, userTemp.Roles, userdb.Roles)
 	}
 
 	if update.IsActive != nil {
-		assert.Equal(t, *update.IsActive, userdb.IsActive)
+		require.Equal(t, *update.IsActive, userdb.IsActive)
 	}
 
 	if update.Password != "" {
 		match, err := user.EqualPassword(update.Password, userdb.Password)
-		assert.NoError(t, err)
-		assert.True(t, match)
+		require.NoError(t, err)
+		require.True(t, match)
 	} else {
 		match, err := user.EqualPassword(userTemp.Password, userdb.Password)
-		assert.NoError(t, err)
-		assert.True(t, match)
+		require.NoError(t, err)
+		require.True(t, match)
 	}
 }
 
@@ -532,9 +532,9 @@ func TestUserUpdate(t *testing.T) {
 				userid, _, userTemp := createTempUser(t, user, db, roles)
 
 				err := user.Update(userid, test.input)
-				assert.NoError(t, err)
+				require.NoError(t, err)
 
-				assertUserUpdate(t, test.input, userTemp, userid, user)
+				requireUserUpdate(t, test.input, userTemp, userid, user)
 			})
 		}
 	})
@@ -547,9 +547,9 @@ func TestUserUpdate(t *testing.T) {
 		update := model.UserUpdate{Roles: randomSliceString(roles)} //nolint:exhaustruct
 
 		err := user.Update(userid, update)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
-		assertUserUpdate(t, update, userTemp, userid, user)
+		requireUserUpdate(t, update, userTemp, userid, user)
 	})
 
 	t.Run("ValidInputs/All", func(t *testing.T) {
@@ -567,9 +567,9 @@ func TestUserUpdate(t *testing.T) {
 		}
 
 		err := user.Update(userid, update)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
-		assertUserUpdate(t, update, userTemp, userid, user)
+		requireUserUpdate(t, update, userTemp, userid, user)
 	})
 
 	t.Run("InvalidInputs", func(t *testing.T) {
@@ -582,7 +582,7 @@ func TestUserUpdate(t *testing.T) {
 				t.Parallel()
 
 				err := user.Update(model.NewID(), test.input)
-				assert.ErrorAs(t, err, &core.ModelInvalidError{})
+				require.ErrorAs(t, err, &core.ModelInvalidError{})
 			})
 		}
 	})
@@ -593,7 +593,7 @@ func TestUserUpdate(t *testing.T) {
 		userid, _, _ := createTempUser(t, user, db, roles)
 		input := model.UserUpdate{Roles: []string{gofakeit.Name()}} //nolint:exhaustruct
 		err := user.Update(userid, input)
-		assert.ErrorIs(t, err, errs.ErrRoleNotFound)
+		require.ErrorIs(t, err, errs.ErrRoleNotFound)
 	})
 
 	t.Run("UserNotFound", func(t *testing.T) {
@@ -601,7 +601,7 @@ func TestUserUpdate(t *testing.T) {
 
 		input := model.UserUpdate{Name: gofakeit.Name()} //nolint:exhaustruct
 		err := user.Update(model.NewID(), input)
-		assert.ErrorIs(t, err, errs.ErrUserNotFound)
+		require.ErrorIs(t, err, errs.ErrUserNotFound)
 	})
 
 	t.Run("Duplicate", func(t *testing.T) {
@@ -613,34 +613,34 @@ func TestUserUpdate(t *testing.T) {
 		t.Run("Username", func(t *testing.T) {
 			input := model.UserUpdate{Username: userTemp2.Username} //nolint:exhaustruct
 			err := user.Update(id1, input)
-			assert.ErrorIs(t, err, errs.ErrUsernameAlreadyExist)
+			require.ErrorIs(t, err, errs.ErrUsernameAlreadyExist)
 		})
 
 		t.Run("Email", func(t *testing.T) {
 			input := model.UserUpdate{Email: userTemp2.Email} //nolint:exhaustruct
 			err := user.Update(id1, input)
-			assert.ErrorIs(t, err, errs.ErrEmailAlreadyExist)
+			require.ErrorIs(t, err, errs.ErrEmailAlreadyExist)
 		})
 	})
 }
 
-func assertUserDelete(t *testing.T, partial partialUser, userdb model.User, user *core.User) {
+func requireUserDelete(t *testing.T, partial partialUser, userdb model.User, user *core.User) {
 	t.Helper()
 
-	assert.Equal(t, partial.userID, userdb.ID)
-	assert.Equal(t, partial.input.Name, userdb.Name)
-	assert.Equal(t, partial.input.Username, userdb.Username)
-	assert.Equal(t, partial.input.Email, userdb.Email)
-	assert.Equal(t, partial.input.Roles, userdb.Roles)
-	assert.True(t, userdb.IsActive)
-	assert.LessOrEqual(t, time.Since(userdb.CreatedAt), time.Minute)
-	assert.Equal(t, partial.createdBy, userdb.CreatedBy)
-	assert.LessOrEqual(t, time.Since(userdb.DeletedAt), time.Minute)
-	assert.Equal(t, partial.deletedBy, userdb.DeletedBy)
+	require.Equal(t, partial.userID, userdb.ID)
+	require.Equal(t, partial.input.Name, userdb.Name)
+	require.Equal(t, partial.input.Username, userdb.Username)
+	require.Equal(t, partial.input.Email, userdb.Email)
+	require.Equal(t, partial.input.Roles, userdb.Roles)
+	require.True(t, userdb.IsActive)
+	require.LessOrEqual(t, time.Since(userdb.CreatedAt), time.Minute)
+	require.Equal(t, partial.createdBy, userdb.CreatedBy)
+	require.LessOrEqual(t, time.Since(userdb.DeletedAt), time.Minute)
+	require.Equal(t, partial.deletedBy, userdb.DeletedBy)
 
 	match, err := user.EqualPassword(partial.input.Password, userdb.Password)
-	assert.NoError(t, err)
-	assert.True(t, match)
+	require.NoError(t, err)
+	require.True(t, match)
 }
 
 func TestUserDelete(t *testing.T) { //nolint:funlen
@@ -679,7 +679,7 @@ func TestUserDelete(t *testing.T) { //nolint:funlen
 		deletedby := model.NewID()
 
 		err := user.Delete(userid, deletedby)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		usersTemp[i] = partialUser{
 			userID:    userid,
@@ -712,24 +712,24 @@ func TestUserDelete(t *testing.T) { //nolint:funlen
 			t.Parallel()
 
 			userFound, err := user.GetByID(userTemp.userID)
-			assert.ErrorIs(t, err, errs.ErrUserNotFound)
-			assert.Equal(t, userFound, model.EmptyUser)
+			require.ErrorIs(t, err, errs.ErrUserNotFound)
+			require.Equal(t, userFound, model.EmptyUser)
 		})
 
 		t.Run("GetByUsername", func(t *testing.T) {
 			t.Parallel()
 
 			userFound, err := user.GetByUsername(userTemp.input.Username)
-			assert.ErrorIs(t, err, errs.ErrUserNotFound)
-			assert.Equal(t, userFound, model.EmptyUser)
+			require.ErrorIs(t, err, errs.ErrUserNotFound)
+			require.Equal(t, userFound, model.EmptyUser)
 		})
 
 		t.Run("GetByEmail", func(t *testing.T) {
 			t.Parallel()
 
 			userDound, err := user.GetByEmail(userTemp.input.Email)
-			assert.ErrorIs(t, err, errs.ErrUserNotFound)
-			assert.Equal(t, userDound, model.EmptyUser)
+			require.ErrorIs(t, err, errs.ErrUserNotFound)
+			require.Equal(t, userDound, model.EmptyUser)
 		})
 	}
 
@@ -737,16 +737,16 @@ func TestUserDelete(t *testing.T) { //nolint:funlen
 		t.Parallel()
 
 		usersdb, err := user.GetAll(0, qtUsers)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
-		assert.Equal(t, qtUsers, len(usersdb))
+		require.Equal(t, qtUsers, len(usersdb))
 
 		for _, userdb := range usersdb {
 			index := slices.IndexFunc(usersTemp, func(p partialUser) bool {
 				return p.userID == userdb.ID
 			})
 
-			assertUserDelete(t, usersTemp[index], userdb, user)
+			requireUserDelete(t, usersTemp[index], userdb, user)
 		}
 	})
 
@@ -758,15 +758,15 @@ func TestUserDelete(t *testing.T) { //nolint:funlen
 			t.Parallel()
 
 			usersdb, err := user.GetByRole([]string{role}, 0, qtUsers)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
-			assert.Equal(t, sum, len(usersdb))
+			require.Equal(t, sum, len(usersdb))
 
 			for _, userdb := range usersdb {
 				index := slices.IndexFunc(usersTemp, func(p partialUser) bool {
 					return p.userID == userdb.ID
 				})
-				assertUserDelete(t, usersTemp[index], userdb, user)
+				requireUserDelete(t, usersTemp[index], userdb, user)
 			}
 		})
 	}
@@ -787,15 +787,15 @@ func TestUserDelete(t *testing.T) { //nolint:funlen
 
 					t.Run(role2, func(t *testing.T) {
 						usersdb, err := user.GetByRole([]string{role1, role2}, 0, qtUsers)
-						assert.NoError(t, err)
+						require.NoError(t, err)
 
-						assert.Equal(t, sum, len(usersdb))
+						require.Equal(t, sum, len(usersdb))
 
 						for _, userdb := range usersdb {
 							index := slices.IndexFunc(usersTemp, func(p partialUser) bool {
 								return p.userID == userdb.ID
 							})
-							assertUserDelete(t, usersTemp[index], userdb, user)
+							requireUserDelete(t, usersTemp[index], userdb, user)
 						}
 					})
 				}
@@ -807,7 +807,7 @@ func TestUserDelete(t *testing.T) { //nolint:funlen
 		t.Parallel()
 
 		err := user.Delete(model.NewID(), model.NewID())
-		assert.ErrorIs(t, err, errs.ErrUserNotFound)
+		require.ErrorIs(t, err, errs.ErrUserNotFound)
 	})
 }
 
@@ -842,22 +842,22 @@ func TestUserWithArgon(t *testing.T) {
 			}
 
 			userdb, err := user.GetByID(userid)
-			assert.NoError(t, err)
-			assertUser(t, partial, userdb, user)
+			require.NoError(t, err)
+			requireUser(t, partial, userdb, user)
 
 			update := model.UserUpdate{ //nolint:exhaustruct
 				Password: gofakeit.Password(true, true, true, true, true, 20),
 			}
 			err = user.Update(userid, update)
-			assert.NoError(t, err)
-			assertUserUpdate(t, update, userTemp, userid, user)
+			require.NoError(t, err)
+			requireUserUpdate(t, update, userTemp, userid, user)
 
 			err = user.Delete(userid, partial.deletedBy)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			userFound, err := user.GetByID(userid)
-			assert.ErrorIs(t, err, errs.ErrUserNotFound)
-			assert.Equal(t, userFound, model.EmptyUser)
+			require.ErrorIs(t, err, errs.ErrUserNotFound)
+			require.Equal(t, userFound, model.EmptyUser)
 		})
 	}
 }

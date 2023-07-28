@@ -6,7 +6,7 @@ import (
 
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/thiago-felipe-99/autenticacao/model"
 )
 
@@ -19,16 +19,16 @@ func TestID(t *testing.T) {
 		uuidID := uuid.New()
 
 		id, err := model.ParseID(uuidID.String())
-		assert.NoError(t, err)
-		assert.Equal(t, id, model.ID(uuidID))
-		assert.Equal(t, id.String(), uuidID.String())
+		require.NoError(t, err)
+		require.Equal(t, id, model.ID(uuidID))
+		require.Equal(t, id.String(), uuidID.String())
 
 		idValue, err := id.Value()
-		assert.NoError(t, err)
-		assert.Equal(t, id.String(), idValue)
+		require.NoError(t, err)
+		require.Equal(t, id.String(), idValue)
 
 		_, err = model.ParseID("invalid-id")
-		assert.ErrorContains(t, err, "error parsing ID")
+		require.ErrorContains(t, err, "error parsing ID")
 	})
 
 	t.Run("ScanID", func(t *testing.T) {
@@ -38,16 +38,16 @@ func TestID(t *testing.T) {
 
 		id := model.ID{}
 		err := id.Scan(uuidID)
-		assert.NoError(t, err)
-		assert.Equal(t, id, model.ID(uuidID))
-		assert.Equal(t, id.String(), uuidID.String())
+		require.NoError(t, err)
+		require.Equal(t, id, model.ID(uuidID))
+		require.Equal(t, id.String(), uuidID.String())
 
 		idValue, err := id.Value()
-		assert.NoError(t, err)
-		assert.Equal(t, id.String(), idValue)
+		require.NoError(t, err)
+		require.Equal(t, id.String(), idValue)
 
 		err = id.Scan("invalid-id")
-		assert.ErrorContains(t, err, "error parsing ID")
+		require.ErrorContains(t, err, "error parsing ID")
 	})
 
 	t.Run("NewID", func(t *testing.T) {
@@ -55,13 +55,13 @@ func TestID(t *testing.T) {
 
 		id := model.NewID()
 		uuidID, err := uuid.Parse(id.String())
-		assert.NoError(t, err)
-		assert.Equal(t, id, model.ID(uuidID))
-		assert.Equal(t, id.String(), uuidID.String())
+		require.NoError(t, err)
+		require.Equal(t, id, model.ID(uuidID))
+		require.Equal(t, id.String(), uuidID.String())
 
 		idValue, err := id.Value()
-		assert.NoError(t, err)
-		assert.Equal(t, id.String(), idValue)
+		require.NoError(t, err)
+		require.Equal(t, id.String(), idValue)
 	})
 }
 
@@ -96,6 +96,6 @@ func TestUser(t *testing.T) {
 		DeletedBy: user.DeletedBy,
 	}
 
-	assert.Equal(t, user.Postgres(), postgres)
-	assert.Equal(t, postgres.User(), user)
+	require.Equal(t, user.Postgres(), postgres)
+	require.Equal(t, postgres.User(), user)
 }

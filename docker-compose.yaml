@@ -17,7 +17,7 @@ services:
     restart: always
     ports:
       - '6379:6379'
-    command: redis-server --save 60 1 --loglevel warning --requirepass qt4BLAnrrNSZp2ssRMkLzZjnaZQkcL22
+    command: redis-server --save 60 1 --loglevel warning --requirepass redis
     volumes: 
       - redis:/data
 volumes:

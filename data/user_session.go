@@ -15,8 +15,8 @@ import (
 )
 
 var (
-	errMaxBiggerThanBuffer = fmt.Errorf("max must be less than buffer size")
-	errSmallClock          = fmt.Errorf("clock must be greater o equal to 1 second")
+	ErrMaxBiggerThanBuffer = fmt.Errorf("max must be less than buffer size")
+	ErrSmallClock          = fmt.Errorf("clock must be greater o equal to 1 second")
 )
 
 type UserSessionRedis struct {
@@ -154,12 +154,14 @@ func (u *UserSessionRedis) consumeChan(
 }
 
 func (u *UserSessionRedis) ConsumeQueues(clock time.Duration, max int) error {
+	log.Println(max, u.bufferSize)
+
 	if max >= u.bufferSize {
-		return errMaxBiggerThanBuffer
+		return ErrMaxBiggerThanBuffer
 	}
 
 	if clock < time.Second {
-		return errSmallClock
+		return ErrSmallClock
 	}
 
 	go u.consumeChan(clock, max, u.created, "users_sessions_created")

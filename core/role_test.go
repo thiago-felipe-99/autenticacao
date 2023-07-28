@@ -8,7 +8,7 @@ import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/go-playground/validator/v10"
 	"github.com/jmoiron/sqlx"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/thiago-felipe-99/autenticacao/core"
 	"github.com/thiago-felipe-99/autenticacao/data"
 	"github.com/thiago-felipe-99/autenticacao/errs"
@@ -23,11 +23,11 @@ func createTempRole(t *testing.T, role *core.Role, db *sqlx.DB) (model.ID, model
 	input := model.RolePartial{Name: gofakeit.Name()}
 
 	err := role.Create(id, input)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		_, err = db.Exec("DELETE FROM role WHERE name=$1", input.Name)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 
 	return id, input
@@ -65,7 +65,7 @@ func TestRoleCreate(t *testing.T) {
 				t.Parallel()
 
 				err := role.Create(id, test.input)
-				assert.ErrorAs(t, err, &core.ModelInvalidError{})
+				require.ErrorAs(t, err, &core.ModelInvalidError{})
 			})
 		}
 	})
@@ -76,7 +76,7 @@ func TestRoleCreate(t *testing.T) {
 		id, input := createTempRole(t, role, db)
 
 		err := role.Create(id, input)
-		assert.ErrorIs(t, err, errs.ErrRoleAlreadyExist)
+		require.ErrorIs(t, err, errs.ErrRoleAlreadyExist)
 	})
 
 	t.Run("DuplicateCreatedBy", func(t *testing.T) {
@@ -86,11 +86,11 @@ func TestRoleCreate(t *testing.T) {
 		input := model.RolePartial{Name: gofakeit.Name()}
 
 		err := role.Create(id, input)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		t.Cleanup(func() {
 			_, err = db.Exec("DELETE FROM role WHERE name=$1", input.Name)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		})
 	})
 }
@@ -115,12 +115,12 @@ func TestRoleGet(t *testing.T) {
 			t.Parallel()
 
 			roledb, err := role.GetByName(roleTmp)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
-			assert.Equal(t, roleTmp, roledb.Name)
-			assert.LessOrEqual(t, time.Since(roledb.CreatedAt), time.Second)
-			assert.True(t, time.Time{}.Equal(roledb.DeletedAt))
-			assert.Equal(t, model.EmptyID, roledb.DeletedBy)
+			require.Equal(t, roleTmp, roledb.Name)
+			require.LessOrEqual(t, time.Since(roledb.CreatedAt), time.Second)
+			require.True(t, time.Time{}.Equal(roledb.DeletedAt))
+			require.Equal(t, model.EmptyID, roledb.DeletedBy)
 		})
 	}
 
@@ -128,15 +128,15 @@ func TestRoleGet(t *testing.T) {
 		t.Parallel()
 
 		rolesdb, err := role.GetAll(0, qtRoles)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
-		assert.Equal(t, qtRoles, len(rolesdb))
+		require.Equal(t, qtRoles, len(rolesdb))
 
 		for _, roledb := range rolesdb {
-			assert.True(t, slices.Contains(rolesTmp, roledb.Name))
-			assert.LessOrEqual(t, time.Since(roledb.CreatedAt), time.Second)
-			assert.True(t, time.Time{}.Equal(roledb.DeletedAt))
-			assert.Equal(t, model.EmptyID, roledb.DeletedBy)
+			require.True(t, slices.Contains(rolesTmp, roledb.Name))
+			require.LessOrEqual(t, time.Since(roledb.CreatedAt), time.Second)
+			require.True(t, time.Time{}.Equal(roledb.DeletedAt))
+			require.Equal(t, model.EmptyID, roledb.DeletedBy)
 		}
 	})
 
@@ -144,8 +144,8 @@ func TestRoleGet(t *testing.T) {
 		t.Parallel()
 
 		rolesdb, err := role.GetAll(qtRoles, qtRoles)
-		assert.NoError(t, err)
-		assert.Equal(t, model.EmptyRoles, rolesdb)
+		require.NoError(t, err)
+		require.Equal(t, model.EmptyRoles, rolesdb)
 	})
 }
 
@@ -166,7 +166,7 @@ func TestRoleDelete(t *testing.T) {
 		rolesTmp[i] = roleTemp.Name
 
 		err := role.Delete(id, roleTemp.Name)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 
 	for _, roleTmp := range rolesTmp {
@@ -176,8 +176,8 @@ func TestRoleDelete(t *testing.T) {
 			t.Parallel()
 
 			found, err := role.GetByName(roleTmp)
-			assert.ErrorIs(t, err, errs.ErrRoleNotFound)
-			assert.Nil(t, found)
+			require.ErrorIs(t, err, errs.ErrRoleNotFound)
+			require.Nil(t, found)
 		})
 	}
 
@@ -185,15 +185,15 @@ func TestRoleDelete(t *testing.T) {
 		t.Parallel()
 
 		rolesdb, err := role.GetAll(0, qtRoles)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
-		assert.Equal(t, qtRoles, len(rolesdb))
+		require.Equal(t, qtRoles, len(rolesdb))
 
 		for _, roledb := range rolesdb {
-			assert.True(t, slices.Contains(rolesTmp, roledb.Name))
-			assert.LessOrEqual(t, time.Since(roledb.CreatedAt), time.Second*2)
-			assert.LessOrEqual(t, time.Since(roledb.DeletedAt), time.Second*2)
-			assert.True(t, slices.Contains(rolesID, roledb.DeletedBy))
+			require.True(t, slices.Contains(rolesTmp, roledb.Name))
+			require.LessOrEqual(t, time.Since(roledb.CreatedAt), time.Second*2)
+			require.LessOrEqual(t, time.Since(roledb.DeletedAt), time.Second*2)
+			require.True(t, slices.Contains(rolesID, roledb.DeletedBy))
 		}
 	})
 
@@ -203,7 +203,7 @@ func TestRoleDelete(t *testing.T) {
 		for i := 0; i < qtRoles; i++ {
 			t.Run(fmt.Sprint(i), func(t *testing.T) {
 				err := role.Delete(model.NewID(), gofakeit.Name())
-				assert.ErrorIs(t, err, errs.ErrRoleNotFound)
+				require.ErrorIs(t, err, errs.ErrRoleNotFound)
 			})
 		}
 	})

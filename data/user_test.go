@@ -276,3 +276,53 @@ func TestUserGetByRoles(t *testing.T) {
 		assert.Nil(t, roles)
 	})
 }
+
+func TestUserDelete(t *testing.T) {
+	t.Parallel()
+
+	qtRoles := 100
+
+	user := data.NewUserSQL(createTempDB(t, "data_user_delete"))
+
+	for i := 0; i < qtRoles; i++ {
+		t.Run("ValidInputs", func(t *testing.T) {
+			t.Parallel()
+
+			tempUser := createUser()
+
+			err := user.Create(tempUser)
+			assert.NoError(t, err)
+
+			err = user.Delete(tempUser.ID, time.Now(), model.NewID())
+			assert.NoError(t, err)
+
+			foundRole, err := user.GetByID(tempUser.ID)
+			assert.ErrorIs(t, err, errs.ErrUserNotFound)
+			assert.Nil(t, foundRole)
+
+			foundRole, err = user.GetByUsername(tempUser.Username)
+			assert.ErrorIs(t, err, errs.ErrUserNotFound)
+			assert.Nil(t, foundRole)
+
+			foundRole, err = user.GetByEmail(tempUser.Email)
+			assert.ErrorIs(t, err, errs.ErrUserNotFound)
+			assert.Nil(t, foundRole)
+		})
+	}
+
+	t.Run("InvalidID", func(t *testing.T) {
+		t.Parallel()
+
+		err := user.Delete(model.NewID(), time.Now(), model.NewID())
+		assert.NoError(t, err)
+	})
+
+	t.Run("WrongDB", func(t *testing.T) {
+		t.Parallel()
+
+		user := data.NewUserSQL(createWrongDB(t))
+
+		err := user.Delete(model.NewID(), time.Now(), model.NewID())
+		assert.ErrorContains(t, err, "no such host")
+	})
+}

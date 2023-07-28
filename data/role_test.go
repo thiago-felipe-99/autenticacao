@@ -260,7 +260,7 @@ func TestRoleDelete(t *testing.T) {
 	role := data.NewRoleSQL(createTempDB(t, "data_role_delete"))
 
 	for i := 0; i < qtRoles; i++ {
-		t.Run("ValidNames", func(t *testing.T) {
+		t.Run("ValidInputs", func(t *testing.T) {
 			t.Parallel()
 
 			tempRole := createRole()

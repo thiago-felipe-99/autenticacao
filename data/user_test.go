@@ -84,11 +84,11 @@ func checkUser(t *testing.T, expected, found model.User) {
 func TestGetBy(t *testing.T) {
 	t.Parallel()
 
-	qtRoles := 100
+	qtUsers := 100
 
 	user := data.NewUserSQL(createTempDB(t, "data_role_get_by"))
 
-	for i := 0; i < qtRoles; i++ {
+	for i := 0; i < qtUsers; i++ {
 		t.Run("InvalidInput", func(t *testing.T) {
 			t.Parallel()
 
@@ -225,6 +225,10 @@ func TestUserGetByRoles(t *testing.T) {
 	qtRoles := gofakeit.Number(10, 20)
 	roles := make([]string, 0, qtRoles)
 
+	for i := 0; i < qtRoles; i++ {
+		roles = append(roles, gofakeit.Name())
+	}
+
 	for i := 0; i < qtUsers; i++ {
 		tempUser := createUserWithRoles(roles)
 		createdUsers = append(createdUsers, tempUser)
@@ -280,11 +284,11 @@ func TestUserGetByRoles(t *testing.T) {
 func TestUserDelete(t *testing.T) {
 	t.Parallel()
 
-	qtRoles := 100
+	qtUsers := 100
 
 	user := data.NewUserSQL(createTempDB(t, "data_user_delete"))
 
-	for i := 0; i < qtRoles; i++ {
+	for i := 0; i < qtUsers; i++ {
 		t.Run("ValidInputs", func(t *testing.T) {
 			t.Parallel()
 
@@ -323,6 +327,77 @@ func TestUserDelete(t *testing.T) {
 		user := data.NewUserSQL(createWrongDB(t))
 
 		err := user.Delete(model.NewID(), time.Now(), model.NewID())
+		assert.ErrorContains(t, err, "no such host")
+	})
+}
+
+func TestUserUpdate(t *testing.T) {
+	t.Parallel()
+
+	qtUsers := 100
+
+	user := data.NewUserSQL(createTempDB(t, "data_user_update"))
+
+	for i := 0; i < qtUsers; i++ {
+		t.Run("ValidInputs", func(t *testing.T) {
+			t.Parallel()
+
+			tempUser := createUser()
+
+			err := user.Create(tempUser)
+			assert.NoError(t, err)
+
+			qtRoles := gofakeit.Number(10, 20)
+			roles := make([]string, 0, qtRoles)
+
+			for i := 0; i < qtRoles; i++ {
+				roles = append(roles, gofakeit.Name())
+			}
+
+			tempUser.Name = gofakeit.Name()
+			tempUser.Username = gofakeit.Username()
+			tempUser.Email = gofakeit.Email()
+			tempUser.Roles = roles
+			tempUser.IsActive = false
+			tempUser.Password = gofakeit.Password(
+				true,
+				true,
+				true,
+				true,
+				true,
+				gofakeit.Number(10, 255),
+			)
+
+			err = user.Update(tempUser)
+			assert.NoError(t, err)
+
+			foundRole, err := user.GetByID(tempUser.ID)
+			assert.NoError(t, err)
+			checkUser(t, tempUser, *foundRole)
+
+			foundRole, err = user.GetByUsername(tempUser.Username)
+			assert.NoError(t, err)
+			checkUser(t, tempUser, *foundRole)
+
+			foundRole, err = user.GetByEmail(tempUser.Email)
+			assert.NoError(t, err)
+			checkUser(t, tempUser, *foundRole)
+		})
+	}
+
+	t.Run("InvalidID", func(t *testing.T) {
+		t.Parallel()
+
+		err := user.Update(createUser())
+		assert.NoError(t, err)
+	})
+
+	t.Run("WrongDB", func(t *testing.T) {
+		t.Parallel()
+
+		user := data.NewUserSQL(createWrongDB(t))
+
+		err := user.Update(createUser())
 		assert.ErrorContains(t, err, "no such host")
 	})
 }

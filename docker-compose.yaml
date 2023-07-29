@@ -11,7 +11,7 @@ services:
       - 5432:5432
     volumes:
       - postgres:/var/lib/postgresql
-      - ./my-postgres.conf:/etc/postgresql/postgresql.conf
+      - ./check_postgresql.sh:/check_postgresql.sh
   redis:
     image: redis:alpine
     restart: always

@@ -1,16 +1,16 @@
-postgresql_url = postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
+POSTGRESQL_URL = postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
 
-.PHONY: sleep
-sleep:
-	sleep 10
+.PHONY: verify_postgresql
+verify_postgresql:
+	docker exec -it autenticacao-postgres-1 sh /check_postgresql.sh
 
 .PHONY: migrate_up
 migrate_up:
-	migrate -database $(postgresql_url) -path data/migrations up
+	migrate -database $(POSTGRESQL_URL) -path data/migrations up
 
 .PHONY: migrate_down
 migrate_down:
-	migrate -database $(postgresql_url) -path data/migrations down -all
+	migrate -database $(POSTGRESQL_URL) -path data/migrations down -all
 
 .PHONY: docker_up
 docker_up:
@@ -21,10 +21,15 @@ docker_down:
 	docker compose down
 
 .PHONY: up
-up: docker_up sleep migrate_up
+up: docker_up verify_postgresql migrate_up
 
 .PHONY: down
 down: migrate_down docker_down
+
+.PHONY: down_clean 
+down_clean: down
+	docker compose down -v
+	rm -rf coverage.out
 
 .PHONY: lint
 lint:
@@ -39,3 +44,8 @@ coverage:
 	go test -coverprofile coverage.out ./...
 	go tool cover -html=coverage.out
 
+.PHONY: clean
+clean: down_clean
+
+.PHONY: all
+all: up

@@ -2,9 +2,11 @@ package core
 
 import (
 	"errors"
+	"time"
 
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
+	"github.com/thiago-felipe-99/autenticacao/data"
 	"github.com/thiago-felipe-99/autenticacao/errs"
 )
 
@@ -45,4 +47,27 @@ func Validate(validate *validator.Validate, data any) error {
 	}
 
 	return nil
+}
+
+type Cores struct {
+	*Role
+	*User
+	*UserSession
+}
+
+func NewCore(
+	data *data.Data,
+	validate *validator.Validate,
+	argonEnable bool,
+	expires time.Duration,
+) *Cores {
+	role := NewRole(data.Role, validate)
+	user := NewUser(data.User, role, validate, argonEnable)
+	userSession := NewUserSession(data.UserSession, user, validate, expires)
+
+	return &Cores{
+		Role:        role,
+		User:        user,
+		UserSession: userSession,
+	}
 }

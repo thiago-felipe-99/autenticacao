@@ -3,6 +3,8 @@ package data
 import (
 	"time"
 
+	"github.com/jmoiron/sqlx"
+	"github.com/redis/go-redis/v9"
 	"github.com/thiago-felipe-99/autenticacao/model"
 )
 
@@ -32,4 +34,31 @@ type UserSession interface {
 	GetByUserIDInactive(id model.ID, paginate int, qt int) ([]model.UserSession, error)
 	Create(user model.UserSession) error
 	Delete(id model.ID, deletetAd time.Time) (model.UserSession, error)
+}
+
+type Data struct {
+	Role
+	User
+	UserSession
+}
+
+func NewDataSQLRedis(
+	db *sqlx.DB,
+	redis *redis.Client,
+	expires time.Duration,
+	bufferSize int,
+	queueSize int,
+) (*Data, error) {
+	role := NewRoleSQL(db)
+	user := NewUserSQL(db)
+	userSession := NewUserSessionRedis(redis, db, bufferSize)
+
+	err := userSession.ConsumeQueues(expires, queueSize)
+	userSession.LogErrors()
+
+	return &Data{
+		Role:        role,
+		User:        user,
+		UserSession: userSession,
+	}, err
 }

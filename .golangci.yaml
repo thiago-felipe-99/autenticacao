@@ -15,6 +15,9 @@ linters-settings:
       - tx
       - db
       - i
+  wrapcheck:
+    ignorePackageGlobs:
+      - github.com/gofiber/fiber/v2
 linters:
   enable:
     - errcheck

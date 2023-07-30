@@ -28,7 +28,7 @@ import (
 const defaultQtResults = 100
 
 type sent struct {
-	Message string `json:"message" bson:"message"`
+	Message string `json:"message"`
 }
 
 type expectError struct {
@@ -76,6 +76,7 @@ func callingCoreWithReturn[T any](
 	coreFunc func() (T, error),
 	expectErrors []expectError,
 	unexpectMessageError string,
+	status int,
 	language ut.Translator,
 	handler *fiber.Ctx,
 ) error {
@@ -99,7 +100,7 @@ func callingCoreWithReturn[T any](
 			JSON(sent{unexpectMessageError})
 	}
 
-	return handler.JSON(data)
+	return handler.Status(status).JSON(data)
 }
 
 func createTranslator(validate *validator.Validate) (*ut.UniversalTranslator, error) {
@@ -192,10 +193,23 @@ func CreateHTTPServer(validate *validator.Validate, cores *core.Cores) (*fiber.A
 		languages:  languages,
 	}
 
+	user := User{
+		core:       cores.User,
+		translator: translator,
+		languages:  languages,
+	}
+
 	app.Get("/role", role.GetAll)
 	app.Post("/role", role.Create)
 	app.Get("/role/:name", role.GetByName)
 	app.Delete("/role/:name", role.Delete)
+
+	app.Get("/user", user.GetAll)
+	app.Post("/user", user.Create)
+	app.Get("/user/role", user.GetByRole)
+	app.Get("/user/:id", user.GetByID)
+	app.Put("/user/:id", user.Update)
+	app.Delete("/user/:id", user.Delete)
 
 	return app, nil
 }

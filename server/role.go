@@ -35,7 +35,6 @@ func (r *Role) getTranslator(handler *fiber.Ctx) ut.Translator { //nolint:iretur
 //	@Produce		json
 //	@Success		200		{object}	model.Role	"role return"
 //	@Failure		401		{object}	sent		"user session has expired"
-//	@Failure		403		{object}	sent		"current user is not admin"
 //	@Failure		404		{object}	sent		"role does not exist"
 //	@Failure		500		{object}	sent		"internal server error"
 //	@Param			name	path		string		true	"role name"
@@ -52,6 +51,7 @@ func (r *Role) GetByName(handler *fiber.Ctx) error {
 		funcCore,
 		expectErrors,
 		unexpectMessageError,
+		fiber.StatusOK,
 		r.getTranslator(handler),
 		handler,
 	)
@@ -77,12 +77,13 @@ func (r *Role) GetAll(handler *fiber.Ctx) error {
 
 	expectErrors := []expectError{}
 
-	unexpectMessageError := "error getting role"
+	unexpectMessageError := "error getting roles"
 
 	return callingCoreWithReturn(
 		funcCore,
 		expectErrors,
 		unexpectMessageError,
+		fiber.StatusOK,
 		r.getTranslator(handler),
 		handler,
 	)

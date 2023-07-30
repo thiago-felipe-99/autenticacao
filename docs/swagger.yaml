@@ -20,6 +20,78 @@ definitions:
     required:
     - name
     type: object
+  model.User:
+    properties:
+      createdAt:
+        type: string
+      createdBy:
+        type: string
+      deletedAt:
+        type: string
+      deletedBy:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      isActive:
+        type: boolean
+      name:
+        type: string
+      password:
+        type: string
+      roles:
+        items:
+          type: string
+        type: array
+      username:
+        type: string
+    type: object
+  model.UserPartial:
+    properties:
+      email:
+        maxLength: 255
+        type: string
+      name:
+        maxLength: 255
+        type: string
+      password:
+        maxLength: 255
+        type: string
+      roles:
+        items:
+          type: string
+        type: array
+      username:
+        maxLength: 255
+        type: string
+    required:
+    - email
+    - name
+    - password
+    - username
+    type: object
+  model.UserUpdate:
+    properties:
+      email:
+        maxLength: 255
+        type: string
+      isActive:
+        type: boolean
+      name:
+        maxLength: 255
+        type: string
+      password:
+        maxLength: 255
+        type: string
+      roles:
+        items:
+          type: string
+        type: array
+      username:
+        maxLength: 255
+        type: string
+    type: object
   server.sent:
     properties:
       message:
@@ -161,10 +233,6 @@ paths:
           description: user session has expired
           schema:
             $ref: '#/definitions/server.sent'
-        "403":
-          description: current user is not admin
-          schema:
-            $ref: '#/definitions/server.sent'
         "404":
           description: role does not exist
           schema:
@@ -176,4 +244,248 @@ paths:
       summary: Get role
       tags:
       - role
+  /user:
+    get:
+      consumes:
+      - application/json
+      description: Get all user
+      parameters:
+      - description: result page number
+        in: query
+        name: page
+        type: string
+      - description: quantity user per page
+        in: query
+        name: qt
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: all roles
+          schema:
+            items:
+              $ref: '#/definitions/model.User'
+            type: array
+        "401":
+          description: user session has expired
+          schema:
+            $ref: '#/definitions/server.sent'
+        "500":
+          description: internal server error
+          schema:
+            $ref: '#/definitions/server.sent'
+      summary: Get users
+      tags:
+      - user
+    post:
+      consumes:
+      - application/json
+      description: Create a user.
+      parameters:
+      - description: user params
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/model.UserPartial'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: create user successfully
+          schema:
+            $ref: '#/definitions/server.sent'
+        "400":
+          description: an invalid user param was sent
+          schema:
+            $ref: '#/definitions/server.sent'
+        "401":
+          description: user session has expired
+          schema:
+            $ref: '#/definitions/server.sent'
+        "403":
+          description: current user is not admin
+          schema:
+            $ref: '#/definitions/server.sent'
+        "409":
+          description: username/email already exist
+          schema:
+            $ref: '#/definitions/server.sent'
+        "500":
+          description: internal server error
+          schema:
+            $ref: '#/definitions/server.sent'
+      summary: Create user
+      tags:
+      - user
+  /user/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a user.
+      parameters:
+      - description: user id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: user deleted
+          schema:
+            $ref: '#/definitions/server.sent'
+        "401":
+          description: user session has expired
+          schema:
+            $ref: '#/definitions/server.sent'
+        "403":
+          description: current user is not admin
+          schema:
+            $ref: '#/definitions/server.sent'
+        "404":
+          description: user does not exist
+          schema:
+            $ref: '#/definitions/server.sent'
+        "500":
+          description: internal server error
+          schema:
+            $ref: '#/definitions/server.sent'
+      summary: Delete user
+      tags:
+      - user
+    get:
+      consumes:
+      - application/json
+      description: Get user by id.
+      parameters:
+      - description: user id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: user return
+          schema:
+            $ref: '#/definitions/model.User'
+        "401":
+          description: user session has expired
+          schema:
+            $ref: '#/definitions/server.sent'
+        "404":
+          description: user does not exist
+          schema:
+            $ref: '#/definitions/server.sent'
+        "500":
+          description: internal server error
+          schema:
+            $ref: '#/definitions/server.sent'
+      summary: Get user by id
+      tags:
+      - user
+    put:
+      consumes:
+      - application/json
+      description: Update a user informations.
+      parameters:
+      - description: user params
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/model.UserUpdate'
+      - description: user id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: update user successfully
+          schema:
+            $ref: '#/definitions/server.sent'
+        "400":
+          description: an invalid user param was sent
+          schema:
+            $ref: '#/definitions/server.sent'
+        "401":
+          description: user session has expired
+          schema:
+            $ref: '#/definitions/server.sent'
+        "403":
+          description: current user is not admin
+          schema:
+            $ref: '#/definitions/server.sent'
+        "404":
+          description: user does not exist
+          schema:
+            $ref: '#/definitions/server.sent'
+        "409":
+          description: username/email already exist
+          schema:
+            $ref: '#/definitions/server.sent'
+        "500":
+          description: internal server error
+          schema:
+            $ref: '#/definitions/server.sent'
+      summary: Update user
+      tags:
+      - user
+  /user/roles:
+    get:
+      consumes:
+      - application/json
+      description: Get users by roles.
+      parameters:
+      - collectionFormat: csv
+        description: roles
+        in: query
+        items:
+          type: string
+        name: roles
+        required: true
+        type: array
+      - description: result page number
+        in: query
+        name: page
+        type: string
+      - description: quantity user per page
+        in: query
+        name: qt
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: user return
+          schema:
+            items:
+              $ref: '#/definitions/model.User'
+            type: array
+        "400":
+          description: an invalid role param was sent
+          schema:
+            $ref: '#/definitions/server.sent'
+        "401":
+          description: user session has expired
+          schema:
+            $ref: '#/definitions/server.sent'
+        "404":
+          description: user does not exist
+          schema:
+            $ref: '#/definitions/server.sent'
+        "500":
+          description: internal server error
+          schema:
+            $ref: '#/definitions/server.sent'
+      summary: Get users by roles
+      tags:
+      - user
 swagger: "2.0"

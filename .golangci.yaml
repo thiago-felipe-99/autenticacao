@@ -18,6 +18,7 @@ linters-settings:
   wrapcheck:
     ignorePackageGlobs:
       - github.com/gofiber/fiber/v2
+      - github.com/thiago-felipe-99/autenticacao/*
 linters:
   enable:
     - errcheck

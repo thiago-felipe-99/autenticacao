@@ -1,0 +1,179 @@
+definitions:
+  model.Role:
+    properties:
+      createdAt:
+        type: string
+      createdBy:
+        type: string
+      deletedAt:
+        type: string
+      deletedBy:
+        type: string
+      name:
+        type: string
+    type: object
+  model.RolePartial:
+    properties:
+      name:
+        maxLength: 255
+        type: string
+    required:
+    - name
+    type: object
+  server.sent:
+    properties:
+      message:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /role:
+    get:
+      consumes:
+      - application/json
+      description: Get all roles
+      parameters:
+      - description: result page number
+        in: query
+        name: page
+        type: string
+      - description: quantity roles per page
+        in: query
+        name: qt
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: all roles
+          schema:
+            items:
+              $ref: '#/definitions/model.Role'
+            type: array
+        "401":
+          description: user session has expired
+          schema:
+            $ref: '#/definitions/server.sent'
+        "500":
+          description: internal server error
+          schema:
+            $ref: '#/definitions/server.sent'
+      summary: Get roles
+      tags:
+      - role
+    post:
+      consumes:
+      - application/json
+      description: Create a role.
+      parameters:
+      - description: role params
+        in: body
+        name: role
+        required: true
+        schema:
+          $ref: '#/definitions/model.RolePartial'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: create role successfully
+          schema:
+            $ref: '#/definitions/server.sent'
+        "400":
+          description: an invalid role param was sent
+          schema:
+            $ref: '#/definitions/server.sent'
+        "401":
+          description: user session has expired
+          schema:
+            $ref: '#/definitions/server.sent'
+        "403":
+          description: current user is not admin
+          schema:
+            $ref: '#/definitions/server.sent'
+        "409":
+          description: role already exist
+          schema:
+            $ref: '#/definitions/server.sent'
+        "500":
+          description: internal server error
+          schema:
+            $ref: '#/definitions/server.sent'
+      summary: Create role
+      tags:
+      - role
+  /role/{name}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a role.
+      parameters:
+      - description: role name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: role deleted
+          schema:
+            $ref: '#/definitions/server.sent'
+        "401":
+          description: user session has expired
+          schema:
+            $ref: '#/definitions/server.sent'
+        "403":
+          description: current user is not admin
+          schema:
+            $ref: '#/definitions/server.sent'
+        "404":
+          description: role does not exist
+          schema:
+            $ref: '#/definitions/server.sent'
+        "500":
+          description: internal server error
+          schema:
+            $ref: '#/definitions/server.sent'
+      summary: Delete role
+      tags:
+      - role
+    get:
+      consumes:
+      - application/json
+      description: Get role by name.
+      parameters:
+      - description: role name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: role return
+          schema:
+            $ref: '#/definitions/model.Role'
+        "401":
+          description: user session has expired
+          schema:
+            $ref: '#/definitions/server.sent'
+        "403":
+          description: current user is not admin
+          schema:
+            $ref: '#/definitions/server.sent'
+        "404":
+          description: role does not exist
+          schema:
+            $ref: '#/definitions/server.sent'
+        "500":
+          description: internal server error
+          schema:
+            $ref: '#/definitions/server.sent'
+      summary: Get role
+      tags:
+      - role
+swagger: "2.0"

@@ -21,7 +21,9 @@ docker_down:
 	docker compose down
 
 .PHONY: up
-up: docker_up verify_postgresql migrate_up
+up: docker_up verify_postgresql migrate_up lint
+	swag init
+	go run ./...
 
 .PHONY: down
 down: migrate_down docker_down
@@ -34,9 +36,10 @@ down_clean: down
 .PHONY: lint
 lint:
 	golangci-lint run --fix ./...
+	swag fmt .
 
 .PHONY: test
-test:
+test: docker_up verify_postgresql lint
 	go test ./...
 
 .PHONY: coverage

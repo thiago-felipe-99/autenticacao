@@ -1,10 +1,11 @@
-//nolint:unused,exhaustruct
 package server
 
 import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
+	"time"
 
 	"github.com/ansrivas/fiberprometheus/v2"
 	"github.com/go-playground/locales/en"
@@ -21,7 +22,10 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/swagger"
 	"github.com/thiago-felipe-99/autenticacao/core"
+	_ "github.com/thiago-felipe-99/autenticacao/docs" // importing docs for swagger
 )
+
+const defaultQtResults = 100
 
 type sent struct {
 	Message string `json:"message" bson:"message"`
@@ -125,19 +129,31 @@ func createTranslator(validate *validator.Validate) (*ut.UniversalTranslator, er
 	return translator, nil
 }
 
-func CreateHTTPServer(validate *validator.Validate, cores *core.Cores) (*fiber.App, error) {
-	app := fiber.New()
-
+func registerDefaultMiddlewares(app *fiber.App) {
 	prometheus := fiberprometheus.New("publisher")
 	prometheus.RegisterAt(app, "/metrics")
 
 	app.Use(logger.New(logger.Config{
 		//nolint:lll
-		Format:     "${time} [INFO] - Finished request | ${ip} | ${status} | ${latency} | ${method} | ${path} | ${bytesSent} | ${bytesReceived} | ${error}\n",
-		TimeFormat: "2006/01/02 15:04:05",
+		Format:        "${time} [INFO] - Finished request | ${ip} | ${status} | ${latency} | ${method} | ${path} | ${bytesSent} | ${bytesReceived} | ${error}\n",
+		TimeFormat:    "2006/01/02 15:04:05",
+		Next:          nil,
+		Done:          nil,
+		TimeZone:      "Local",
+		Output:        os.Stdout,
+		DisableColors: false,
+		TimeInterval:  500 * time.Millisecond, //nolint:gomnd
+		CustomTags:    logger.ConfigDefault.CustomTags,
 	}))
-	app.Use(recover.New(recover.Config{EnableStackTrace: true}))
+
+	app.Use(recover.New(recover.Config{
+		EnableStackTrace:  true,
+		Next:              nil,
+		StackTraceHandler: recover.ConfigDefault.StackTraceHandler,
+	}))
+
 	app.Use(prometheus.Middleware)
+
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     "*",
 		AllowHeaders:     "*",
@@ -145,15 +161,23 @@ func CreateHTTPServer(validate *validator.Validate, cores *core.Cores) (*fiber.A
 		AllowCredentials: true,
 		MaxAge:           10, //nolint:gomnd
 		ExposeHeaders:    "session",
+		Next:             nil,
+		AllowOriginsFunc: nil,
 	}))
 
-	swaggerConfig := swagger.Config{
+	swaggerConfig := swagger.Config{ //nolint:exhaustruct
 		Title:                  "Autenticação",
 		WithCredentials:        true,
 		DisplayRequestDuration: true,
 	}
 
 	app.Get("/swagger/*", swagger.New(swaggerConfig))
+}
+
+func CreateHTTPServer(validate *validator.Validate, cores *core.Cores) (*fiber.App, error) {
+	app := fiber.New()
+
+	registerDefaultMiddlewares(app)
 
 	translator, err := createTranslator(validate)
 	if err != nil {
@@ -168,7 +192,10 @@ func CreateHTTPServer(validate *validator.Validate, cores *core.Cores) (*fiber.A
 		languages:  languages,
 	}
 
-	app.Get("/hello", role.hello)
+	app.Get("/role", role.GetAll)
+	app.Post("/role", role.Create)
+	app.Get("/role/:name", role.GetByName)
+	app.Delete("/role/:name", role.Delete)
 
 	return app, nil
 }

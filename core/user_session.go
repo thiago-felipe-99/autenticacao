@@ -108,8 +108,8 @@ func (u *UserSession) Create(partial model.UserSessionPartial) (model.UserSessio
 func (u *UserSession) Delete(id model.ID) (model.UserSession, error) {
 	userSession, err := u.database.Delete(id, time.Now())
 	if err != nil {
-		if errors.Is(err, errs.ErrUserSessionNotFoud) {
-			return model.EmptyUserSession, errs.ErrUserSessionNotFoud
+		if errors.Is(err, errs.ErrUserSessionNotFound) {
+			return model.EmptyUserSession, errs.ErrUserSessionNotFound
 		}
 
 		return model.EmptyUserSession, fmt.Errorf(

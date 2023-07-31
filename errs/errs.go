@@ -10,6 +10,6 @@ var (
 	ErrEmailAlreadyExist    = errors.New("emails already exist")
 	ErrRoleNotFound         = errors.New("role not found")
 	ErrRoleAlreadyExist     = errors.New("role already exist")
-	ErrUserSessionNotFoud   = errors.New("user session not found")
+	ErrUserSessionNotFound  = errors.New("user session not found")
 	ErrPasswordDoesNotMatch = errors.New("password does not match")
 )

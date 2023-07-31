@@ -304,7 +304,7 @@ func TestUserSessionRefresh(t *testing.T) {
 			t.Parallel()
 
 			userSessionTemp, err := userSession.Refresh(model.NewID())
-			require.ErrorIs(t, err, errs.ErrUserSessionNotFoud)
+			require.ErrorIs(t, err, errs.ErrUserSessionNotFound)
 			require.Equal(t, userSessionTemp, model.EmptyUserSession)
 		})
 	}
@@ -384,7 +384,7 @@ func TestUserSessionDelete(t *testing.T) {
 			t.Parallel()
 
 			userSessionTemp, err := userSession.Delete(model.NewID())
-			require.ErrorIs(t, err, errs.ErrUserSessionNotFoud)
+			require.ErrorIs(t, err, errs.ErrUserSessionNotFound)
 			require.Equal(t, userSessionTemp, model.EmptyUserSession)
 		})
 	}

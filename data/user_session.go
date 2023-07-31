@@ -147,7 +147,7 @@ func (u *UserSessionRedis) Delete(id model.ID, deletetAd time.Time) (model.UserS
 	serial, err := u.redis.GetDel(context.Background(), id.String()).Bytes()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
-			return model.EmptyUserSession, errs.ErrUserSessionNotFoud
+			return model.EmptyUserSession, errs.ErrUserSessionNotFound
 		}
 
 		return model.EmptyUserSession, fmt.Errorf("error getting user session from redis: %w", err)

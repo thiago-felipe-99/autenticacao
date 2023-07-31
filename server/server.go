@@ -199,6 +199,16 @@ func CreateHTTPServer(validate *validator.Validate, cores *core.Cores) (*fiber.A
 		languages:  languages,
 	}
 
+	session := UserSession{
+		core:       cores.UserSession,
+		translator: translator,
+		languages:  languages,
+	}
+
+	app.Post("/session", session.Create)
+
+	app.Use(session.Refresh)
+
 	app.Get("/role", role.GetAll)
 	app.Post("/role", role.Create)
 	app.Get("/role/:name", role.GetByName)

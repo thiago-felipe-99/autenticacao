@@ -234,6 +234,91 @@ const docTemplate = `{
                 }
             }
         },
+        "/session": {
+            "put": {
+                "description": "Refresh a user session and set in the response header.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "session"
+                ],
+                "summary": "Refresh session",
+                "responses": {
+                    "200": {
+                        "description": "user session refreshed successfully",
+                        "schema": {
+                            "$ref": "#/definitions/server.sent"
+                        }
+                    },
+                    "401": {
+                        "description": "user session has expired",
+                        "schema": {
+                            "$ref": "#/definitions/server.sent"
+                        }
+                    },
+                    "500": {
+                        "description": "internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/server.sent"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a user session and set in the response header.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "session"
+                ],
+                "summary": "Create session",
+                "parameters": [
+                    {
+                        "description": "user params",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UserSessionPartial"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "session created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/server.sent"
+                        }
+                    },
+                    "400": {
+                        "description": "an invalid user param was sent",
+                        "schema": {
+                            "$ref": "#/definitions/server.sent"
+                        }
+                    },
+                    "404": {
+                        "description": "user does not exist",
+                        "schema": {
+                            "$ref": "#/definitions/server.sent"
+                        }
+                    },
+                    "500": {
+                        "description": "internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/server.sent"
+                        }
+                    }
+                }
+            }
+        },
         "/user": {
             "get": {
                 "description": "Get all user",
@@ -707,6 +792,23 @@ const docTemplate = `{
                 "username": {
                     "type": "string",
                     "maxLength": 255
+                }
+            }
+        },
+        "model.UserSessionPartial": {
+            "type": "object",
+            "required": [
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
                 }
             }
         },

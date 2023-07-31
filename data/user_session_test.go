@@ -162,7 +162,7 @@ func TestUserSession(t *testing.T) { //nolint:funlen
 		t.Parallel()
 
 		userSession, err := userSession.Delete(model.NewID(), time.Now())
-		require.ErrorIs(t, err, errs.ErrUserSessionNotFoud)
+		require.ErrorIs(t, err, errs.ErrUserSessionNotFound)
 		require.Equal(t, model.EmptyUserSession, userSession)
 	})
 }

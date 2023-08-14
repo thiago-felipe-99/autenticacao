@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"time"
 
@@ -14,8 +15,48 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/thiago-felipe-99/autenticacao/core"
 	"github.com/thiago-felipe-99/autenticacao/data"
+	"github.com/thiago-felipe-99/autenticacao/errs"
+	"github.com/thiago-felipe-99/autenticacao/model"
 	"github.com/thiago-felipe-99/autenticacao/server"
 )
+
+func createFirst(configurations *configurations, cores *core.Cores) error {
+	roleAdmin := model.RolePartial{Name: configurations.Role.Name}
+
+	err := cores.Role.Create(model.EmptyID, roleAdmin)
+	if err != nil {
+		if errors.Is(err, errs.ErrRoleAlreadyExist) {
+			log.Printf("[INFO] - Role '%s' already exist", roleAdmin.Name)
+		} else {
+			return err
+		}
+	} else {
+		log.Printf("[INFO] - Role '%s' created", roleAdmin.Name)
+	}
+
+	userAdmin := model.UserPartial{
+		Name:     configurations.User.Name,
+		Username: configurations.User.Username,
+		Email:    configurations.User.Email,
+		Password: configurations.User.Password,
+		Roles:    []string{roleAdmin.Name},
+	}
+
+	_, err = cores.User.Create(model.EmptyID, userAdmin)
+	if err != nil {
+		if errors.Is(err, errs.ErrUsernameAlreadyExist) { //nolint:gocritic
+			log.Printf("[INFO] - User with username '%s' already exist", userAdmin.Username)
+		} else if errors.Is(err, errs.ErrEmailAlreadyExist) {
+			log.Printf("[INFO] - User with email '%s' already exist", userAdmin.Email)
+		} else {
+			return err
+		}
+	} else {
+		log.Printf("[INFO] - User with username '%s' created", userAdmin.Username)
+	}
+
+	return nil
+}
 
 func noError(err error, msg string) {
 	if err != nil {
@@ -23,9 +64,37 @@ func noError(err error, msg string) {
 	}
 }
 
+// Authorization main function
+//
+//	@title						Authorization
+//	@version					1.0
+//	@host						localhost:8080
+//	@BasePath					/
+//	@description				This is an api that make authorization
+//	@securityDefinitions.apikey	ApiKeyAuth
+//	@in							header
+//	@name						name
+//	@securityDefinitions.basic	ApiKeyAuth
 func main() {
-	url := "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
 	validate := validator.New()
+
+	err := validate.RegisterValidation("username", model.CustomValidationUsername)
+	noError(err, "Error register validation")
+
+	configurations, err := getConfigurations(validate)
+	noError(err, "Error getting server configurations")
+
+	url := fmt.Sprintf(
+		"postgres://%s:%s@%s:%d/%s",
+		configurations.Postgres.Username,
+		configurations.Postgres.Password,
+		configurations.Postgres.Host,
+		configurations.Postgres.Port,
+		configurations.Postgres.DB,
+	)
+	if configurations.Postgres.SSLDisable {
+		url += "?sslmode=disable"
+	}
 
 	migrations, err := migrate.New("file://data/migrations", url)
 	noError(err, "Error starting migrations")
@@ -43,15 +112,18 @@ func main() {
 	noError(err, "Error opening database")
 
 	redisClient := redis.NewClient(&redis.Options{ //nolint:exhaustruct
-		Addr:     "localhost:6379",
-		Password: "redis",
-		DB:       0,
+		Addr:     fmt.Sprintf("%s:%d", configurations.Redis.Host, configurations.Redis.Port),
+		Password: configurations.Redis.Password,
+		DB:       configurations.Redis.DB,
 	})
 
 	data, err := data.NewDataSQLRedis(db, redisClient, time.Hour, 2000, 1000) //nolint:gomnd
 	noError(err, "Error starting data")
 
 	cores := core.NewCore(data, validate, true, time.Hour)
+
+	err = createFirst(configurations, cores)
+	noError(err, "Erro creating initial resources")
 
 	server, err := server.CreateHTTPServer(validate, cores)
 	noError(err, "Error creating server")

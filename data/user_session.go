@@ -230,7 +230,7 @@ func (u *UserSessionRedis) consumeChan(
 	}
 }
 
-func (u *UserSessionRedis) expiredUserSessions(clock time.Duration) {
+func (u *UserSessionRedis) expiredUserSessions(clock time.Duration, max int) {
 	ticker := time.NewTicker(clock)
 
 	getInactives := `SELECT uc.id, uc.userid, uc.created_at, uc.expires, uc.deleted_at
@@ -238,21 +238,20 @@ func (u *UserSessionRedis) expiredUserSessions(clock time.Duration) {
 	LEFT JOIN users_sessions_deleted ud
 	ON uc.id = ud.id 
 	WHERE ud.id IS NULL AND now() > uc.expires
-	LIMIT 1000
-	`
+	LIMIT ` + fmt.Sprint(max)
 
 	insertInactives := `INSERT INTO users_sessions_deleted (id, userid, created_at, expires, deleted_at) 
 	VALUES (:id, :userid, :created_at, :expires, :deleted_at)`
 
 	for range ticker.C {
-		usersSessions := make([]model.UserSession, 0, 1000) //nolint:gomnd
+		usersSessions := make([]model.UserSession, 0, max)
 
 		err := u.database.Select(&usersSessions, getInactives)
 		if err != nil {
 			u.errs <- fmt.Errorf("error get user sessions in database: %w", err)
 		}
 
-		for len(usersSessions) == 1000 {
+		for len(usersSessions) == max {
 			_, err = u.database.NamedExec(insertInactives, usersSessions)
 			if err != nil {
 				u.errs <- errors.Join(ErrInsertingUserSessionDB, err)
@@ -286,7 +285,7 @@ func (u *UserSessionRedis) ConsumeQueues(clock time.Duration, max int) error {
 
 	go u.consumeChan(clock, max, u.created, "users_sessions_created")
 	go u.consumeChan(clock, max, u.deleted, "users_sessions_deleted")
-	go u.expiredUserSessions(clock)
+	go u.expiredUserSessions(clock, max)
 
 	return nil
 }

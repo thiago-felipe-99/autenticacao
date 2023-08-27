@@ -171,3 +171,14 @@ var (
 	EmptyUserSession  = UserSession{}   //nolint:exhaustruct,gochecknoglobals
 	EmptyUserSessions = []UserSession{} //nolint:gochecknoglobals
 )
+
+func Validate() *validator.Validate {
+	validate := validator.New()
+
+	err := validate.RegisterValidation("username", CustomValidationUsername)
+	if err != nil {
+		panic(err)
+	}
+
+	return validate
+}

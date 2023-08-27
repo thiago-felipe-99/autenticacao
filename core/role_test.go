@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/brianvoe/gofakeit/v6"
-	"github.com/go-playground/validator/v10"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/require"
 	"github.com/thiago-felipe-99/autenticacao/core"
@@ -37,7 +36,7 @@ func TestRoleCreate(t *testing.T) {
 	t.Parallel()
 
 	db := createTempDB(t, "role_create")
-	role := core.NewRole(data.NewRoleSQL(db), validator.New())
+	role := core.NewRole(data.NewRoleSQL(db), model.Validate())
 
 	t.Run("ValidInputs", func(t *testing.T) {
 		t.Parallel()
@@ -99,7 +98,7 @@ func TestRoleGet(t *testing.T) {
 	t.Parallel()
 
 	db := createTempDB(t, "role_get")
-	role := core.NewRole(data.NewRoleSQL(db), validator.New())
+	role := core.NewRole(data.NewRoleSQL(db), model.Validate())
 	qtRoles := 100
 	rolesTmp := make([]string, qtRoles)
 
@@ -153,7 +152,7 @@ func TestRoleDelete(t *testing.T) {
 	t.Parallel()
 
 	db := createTempDB(t, "role_delete")
-	role := core.NewRole(data.NewRoleSQL(db), validator.New())
+	role := core.NewRole(data.NewRoleSQL(db), model.Validate())
 	qtRoles := 100
 	rolesTmp := make([]string, qtRoles)
 	rolesID := make([]model.ID, qtRoles)
@@ -213,7 +212,7 @@ func TestRoleWrongDB(t *testing.T) {
 	t.Parallel()
 
 	db := createWrongDB(t)
-	role := core.NewRole(data.NewRoleSQL(db), validator.New())
+	role := core.NewRole(data.NewRoleSQL(db), model.Validate())
 
 	err := role.Create(model.NewID(), model.RolePartial{Name: gofakeit.Name()})
 	require.ErrorContains(t, err, "no such host")

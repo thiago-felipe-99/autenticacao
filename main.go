@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -75,10 +74,7 @@ func noError(err error, msg string) {
 //	@in							header
 //	@name						Session
 func main() {
-	validate := validator.New()
-
-	err := validate.RegisterValidation("username", model.CustomValidationUsername)
-	noError(err, "Error register validation")
+	validate := model.Validate()
 
 	configurations, err := getConfigurations(validate)
 	noError(err, "Error getting server configurations")

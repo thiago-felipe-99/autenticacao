@@ -8,7 +8,6 @@ import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"
-	"github.com/go-playground/validator/v10"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -85,7 +84,7 @@ func boolPointer(b bool) *bool {
 func TestValidate(t *testing.T) {
 	t.Parallel()
 
-	validate := validator.New()
+	validate := model.Validate()
 	errMsgs := []string{
 		"Key: 'UserPartial.Name' Error:Field validation for 'Name' failed on the 'required' tag",
 		"Key: 'UserPartial.Username' Error:Field validation for 'Username' failed on the 'required' tag",

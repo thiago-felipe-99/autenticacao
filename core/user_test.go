@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/brianvoe/gofakeit/v6"
-	"github.com/go-playground/validator/v10"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/require"
 	"github.com/thiago-felipe-99/autenticacao/core"
@@ -173,8 +172,8 @@ func TestUserCreate(t *testing.T) {
 
 	db := createTempDB(t, "user_create")
 
-	role := core.NewRole(data.NewRoleSQL(db), validator.New())
-	user := core.NewUser(data.NewUserSQL(db), role, validator.New(), false)
+	role := core.NewRole(data.NewRoleSQL(db), model.Validate())
+	user := core.NewUser(data.NewUserSQL(db), role, model.Validate(), false)
 
 	qtRoles := 10
 	roles := make([]string, qtRoles)
@@ -284,8 +283,8 @@ func TestUserGet(t *testing.T) { //nolint:funlen
 
 	db := createTempDB(t, "user_get")
 
-	role := core.NewRole(data.NewRoleSQL(db), validator.New())
-	user := core.NewUser(data.NewUserSQL(db), role, validator.New(), false)
+	role := core.NewRole(data.NewRoleSQL(db), model.Validate())
+	user := core.NewUser(data.NewUserSQL(db), role, model.Validate(), false)
 
 	qtRoles := 10
 	roles := make([]string, qtRoles)
@@ -509,8 +508,8 @@ func TestUserUpdate(t *testing.T) {
 
 	db := createTempDB(t, "user_update")
 
-	role := core.NewRole(data.NewRoleSQL(db), validator.New())
-	user := core.NewUser(data.NewUserSQL(db), role, validator.New(), false)
+	role := core.NewRole(data.NewRoleSQL(db), model.Validate())
+	user := core.NewUser(data.NewUserSQL(db), role, model.Validate(), false)
 
 	qtRoles := 10
 	roles := make([]string, qtRoles)
@@ -648,8 +647,8 @@ func TestUserDelete(t *testing.T) { //nolint:funlen
 
 	db := createTempDB(t, "user_get")
 
-	role := core.NewRole(data.NewRoleSQL(db), validator.New())
-	user := core.NewUser(data.NewUserSQL(db), role, validator.New(), false)
+	role := core.NewRole(data.NewRoleSQL(db), model.Validate())
+	user := core.NewUser(data.NewUserSQL(db), role, model.Validate(), false)
 
 	qtRoles := 10
 	roles := make([]string, qtRoles)
@@ -824,8 +823,8 @@ func TestUserWithArgon(t *testing.T) {
 
 	db := createTempDB(t, "user_get_argon")
 
-	role := core.NewRole(data.NewRoleSQL(db), validator.New())
-	user := core.NewUser(data.NewUserSQL(db), role, validator.New(), true)
+	role := core.NewRole(data.NewRoleSQL(db), model.Validate())
+	user := core.NewUser(data.NewUserSQL(db), role, model.Validate(), true)
 
 	qtRoles := 5
 	roles := make([]string, qtRoles)
@@ -920,8 +919,8 @@ func TestUserWrongDB(t *testing.T) {
 	db := createWrongDB(t)
 	dbValid := createTempDB(t, "user_wrong_db")
 
-	role1 := core.NewRole(data.NewRoleSQL(dbValid), validator.New())
-	role2 := core.NewRole(data.NewRoleSQL(db), validator.New())
+	role1 := core.NewRole(data.NewRoleSQL(dbValid), model.Validate())
+	role2 := core.NewRole(data.NewRoleSQL(db), model.Validate())
 
 	qtRoles := 10
 	rolesValid := make([]string, qtRoles)
@@ -931,8 +930,8 @@ func TestUserWrongDB(t *testing.T) {
 		rolesValid[i] = role.Name
 	}
 
-	user1 := core.NewUser(data.NewUserSQL(db), role1, validator.New(), true)
-	user2 := core.NewUser(data.NewUserSQL(db), role2, validator.New(), true)
+	user1 := core.NewUser(data.NewUserSQL(db), role1, model.Validate(), true)
+	user2 := core.NewUser(data.NewUserSQL(db), role2, model.Validate(), true)
 
 	input := model.UserPartial{
 		Name:     gofakeit.Name(),

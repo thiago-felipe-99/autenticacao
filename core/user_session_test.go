@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/brianvoe/gofakeit/v6"
-	"github.com/go-playground/validator/v10"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -42,13 +41,13 @@ func TestUserSessionCreate(t *testing.T) { //nolint:funlen
 	buffer := 30
 	overflowBuffer := buffer * 10
 
-	role := core.NewRole(data.NewRoleSQL(db), validator.New())
-	user := core.NewUser(data.NewUserSQL(db), role, validator.New(), false)
+	role := core.NewRole(data.NewRoleSQL(db), model.Validate())
+	user := core.NewUser(data.NewUserSQL(db), role, model.Validate(), false)
 	userSessionRedis := data.NewUserSessionRedis(redisClient, db, buffer)
 	userSession := core.NewUserSession(
 		userSessionRedis,
 		user,
-		validator.New(),
+		model.Validate(),
 		time.Second,
 	)
 
@@ -242,13 +241,13 @@ func TestUserSessionRefresh(t *testing.T) {
 	buffer := 30
 	overflowBuffer := buffer * 10
 
-	role := core.NewRole(data.NewRoleSQL(db), validator.New())
-	user := core.NewUser(data.NewUserSQL(db), role, validator.New(), false)
+	role := core.NewRole(data.NewRoleSQL(db), model.Validate())
+	user := core.NewUser(data.NewUserSQL(db), role, model.Validate(), false)
 	userSessionRedis := data.NewUserSessionRedis(redisClient, db, buffer)
 	userSession := core.NewUserSession(
 		userSessionRedis,
 		user,
-		validator.New(),
+		model.Validate(),
 		time.Second,
 	)
 
@@ -322,13 +321,13 @@ func TestUserSessionDelete(t *testing.T) {
 	buffer := 30
 	overflowBuffer := buffer * 10
 
-	role := core.NewRole(data.NewRoleSQL(db), validator.New())
-	user := core.NewUser(data.NewUserSQL(db), role, validator.New(), false)
+	role := core.NewRole(data.NewRoleSQL(db), model.Validate())
+	user := core.NewUser(data.NewUserSQL(db), role, model.Validate(), false)
 	userSessionRedis := data.NewUserSessionRedis(redisClient, db, buffer)
 	userSession := core.NewUserSession(
 		userSessionRedis,
 		user,
-		validator.New(),
+		model.Validate(),
 		time.Second,
 	)
 
@@ -402,13 +401,13 @@ func TestUserSessionGetAll(t *testing.T) { //nolint:funlen
 	buffer := 30
 	overflowBuffer := buffer * 10
 
-	role := core.NewRole(data.NewRoleSQL(db), validator.New())
-	user := core.NewUser(data.NewUserSQL(db), role, validator.New(), false)
+	role := core.NewRole(data.NewRoleSQL(db), model.Validate())
+	user := core.NewUser(data.NewUserSQL(db), role, model.Validate(), false)
 	userSessionRedis := data.NewUserSessionRedis(redisClient, db, buffer)
 	userSession := core.NewUserSession(
 		userSessionRedis,
 		user,
-		validator.New(),
+		model.Validate(),
 		time.Second*10,
 	)
 
@@ -518,13 +517,13 @@ func TestUserSessionGetByID(t *testing.T) { //nolint:funlen
 	buffer := 30
 	overflowBuffer := buffer * 10
 
-	role := core.NewRole(data.NewRoleSQL(db), validator.New())
-	user := core.NewUser(data.NewUserSQL(db), role, validator.New(), false)
+	role := core.NewRole(data.NewRoleSQL(db), model.Validate())
+	user := core.NewUser(data.NewUserSQL(db), role, model.Validate(), false)
 	userSessionRedis := data.NewUserSessionRedis(redisClient, db, buffer)
 	userSession := core.NewUserSession(
 		userSessionRedis,
 		user,
-		validator.New(),
+		model.Validate(),
 		time.Second*10,
 	)
 
@@ -654,8 +653,8 @@ func TestUserSessionWrongDB(t *testing.T) {
 	db := createWrongDB(t)
 	dbValid := createTempDB(t, "user_wrong_db")
 
-	role1 := core.NewRole(data.NewRoleSQL(dbValid), validator.New())
-	role2 := core.NewRole(data.NewRoleSQL(db), validator.New())
+	role1 := core.NewRole(data.NewRoleSQL(dbValid), model.Validate())
+	role2 := core.NewRole(data.NewRoleSQL(db), model.Validate())
 
 	qtRoles := 10
 	rolesValid := make([]string, qtRoles)
@@ -665,8 +664,8 @@ func TestUserSessionWrongDB(t *testing.T) {
 		rolesValid[i] = role.Name
 	}
 
-	user1 := core.NewUser(data.NewUserSQL(dbValid), role1, validator.New(), true)
-	user2 := core.NewUser(data.NewUserSQL(db), role2, validator.New(), true)
+	user1 := core.NewUser(data.NewUserSQL(dbValid), role1, model.Validate(), true)
+	user2 := core.NewUser(data.NewUserSQL(db), role2, model.Validate(), true)
 
 	inputUser := model.UserPartial{
 		Name:     gofakeit.Name(),
@@ -693,7 +692,7 @@ func TestUserSessionWrongDB(t *testing.T) {
 	userSession1 := core.NewUserSession(
 		userSessionRedis1,
 		user1,
-		validator.New(),
+		model.Validate(),
 		time.Second,
 	)
 	err := userSessionRedis1.ConsumeQueues(time.Second, buffer)
@@ -702,14 +701,14 @@ func TestUserSessionWrongDB(t *testing.T) {
 	userSession2 := core.NewUserSession(
 		data.NewUserSessionRedis(redisClient2, db, overflowBuffer),
 		user1,
-		validator.New(),
+		model.Validate(),
 		time.Second,
 	)
 
 	userSession3 := core.NewUserSession(
 		data.NewUserSessionRedis(redisClient2, db, overflowBuffer),
 		user2,
-		validator.New(),
+		model.Validate(),
 		time.Second,
 	)
 

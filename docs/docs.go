@@ -18,6 +18,11 @@ const docTemplate = `{
     "paths": {
         "/role": {
             "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "description": "Get all roles",
                 "consumes": [
                     "application/json"
@@ -68,6 +73,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "description": "Create a role.",
                 "consumes": [
                     "application/json"
@@ -132,6 +142,11 @@ const docTemplate = `{
         },
         "/role/{name}": {
             "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "description": "Get role by name.",
                 "consumes": [
                     "application/json"
@@ -180,6 +195,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "description": "Delete a role.",
                 "consumes": [
                     "application/json"
@@ -236,6 +256,11 @@ const docTemplate = `{
         },
         "/session": {
             "put": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "description": "Refresh a user session and set in the response header.",
                 "consumes": [
                     "application/json"
@@ -321,6 +346,11 @@ const docTemplate = `{
         },
         "/user": {
             "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "description": "Get all user",
                 "consumes": [
                     "application/json"
@@ -371,6 +401,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "description": "Create a user.",
                 "consumes": [
                     "application/json"
@@ -435,6 +470,11 @@ const docTemplate = `{
         },
         "/user/roles": {
             "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "description": "Get users by roles.",
                 "consumes": [
                     "application/json"
@@ -510,6 +550,11 @@ const docTemplate = `{
         },
         "/user/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "description": "Get user by id.",
                 "consumes": [
                     "application/json"
@@ -558,6 +603,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "description": "Update a user informations.",
                 "consumes": [
                     "application/json"
@@ -633,6 +683,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "description": "Delete a user.",
                 "consumes": [
                     "application/json"
@@ -850,17 +905,24 @@ const docTemplate = `{
                 }
             }
         }
+    },
+    "securityDefinitions": {
+        "BasicAuth": {
+            "type": "apiKey",
+            "name": "Session",
+            "in": "header"
+        }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "",
-	Host:             "",
-	BasePath:         "",
+	Version:          "1.0",
+	Host:             "localhost:8080",
+	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "",
-	Description:      "",
+	Title:            "Authorization",
+	Description:      "This is an api that make authorization",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

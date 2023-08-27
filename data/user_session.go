@@ -29,6 +29,26 @@ type UserSessionRedis struct {
 	errs       chan error
 }
 
+func (u *UserSessionRedis) GetByID(id model.ID) (model.UserSession, error) {
+	serial, err := u.redis.Get(context.Background(), id.String()).Bytes()
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return model.EmptyUserSession, errs.ErrUserSessionNotFound
+		}
+
+		return model.EmptyUserSession, fmt.Errorf("error getting user session from redis: %w", err)
+	}
+
+	var userSession model.UserSession
+
+	err = msgpack.Unmarshal(serial, &userSession)
+	if err != nil {
+		return model.EmptyUserSession, fmt.Errorf("error unmarshaling user session: %w", err)
+	}
+
+	return userSession, nil
+}
+
 func (u *UserSessionRedis) GetAllActive(paginate int, qt int) ([]model.UserSession, error) {
 	userSessions := make([]model.UserSession, qt)
 

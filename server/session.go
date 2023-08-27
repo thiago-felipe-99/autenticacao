@@ -12,6 +12,10 @@ import (
 	"github.com/thiago-felipe-99/autenticacao/model"
 )
 
+const (
+	invalidSession = "invalid_session"
+)
+
 type UserSession struct {
 	core       *core.UserSession
 	translator *ut.UniversalTranslator
@@ -31,7 +35,7 @@ func (u *UserSession) getTranslator(handler *fiber.Ctx) ut.Translator { //nolint
 
 func setUserSession(handler *fiber.Ctx, userSession model.UserSession) {
 	handler.Set("session", userSession.ID.String())
-	handler.Set("session_expires", userSession.Expires.Format(time.RFC3339))
+	handler.Set("session-expires", userSession.Expires.Format(time.RFC3339))
 }
 
 // Create a user session
@@ -90,19 +94,24 @@ func (u *UserSession) Create(handler *fiber.Ctx) error {
 	return err
 }
 
-// Refresh a user session
-//
-//	@Summary		Refresh session
-//	@Tags			session
-//	@Accept			json
-//	@Produce		json
-//	@Success		200	{object}	sent	"user session refreshed successfully"
-//	@Failure		401	{object}	sent	"user session has expired"
-//	@Failure		500	{object}	sent	"internal server error"
-//	@Router			/session [put]
-//	@Description	Refresh a user session and set in the response header.
-func (u *UserSession) Refresh(handler *fiber.Ctx) error {
-	sessionIDRaw := handler.Get("session", "invalid_session")
+func (u *UserSession) getSession(handler *fiber.Ctx) string {
+	header := handler.Get("Session", invalidSession)
+	if header == invalidSession {
+		return invalidSession
+	}
+
+	return header
+}
+
+func (u *UserSession) refresh(
+	handler *fiber.Ctx,
+	refresh func(model.ID) (model.UserSession, error),
+) error {
+	sessionIDRaw := u.getSession(handler)
+	if sessionIDRaw == invalidSession {
+		return handler.Status(fiber.StatusUnauthorized).
+			JSON(sent{errs.ErrUserNotFound.Error()})
+	}
 
 	sessionID, err := model.ParseID(sessionIDRaw)
 	if err != nil {
@@ -110,7 +119,7 @@ func (u *UserSession) Refresh(handler *fiber.Ctx) error {
 			JSON(sent{errs.ErrUserNotFound.Error()})
 	}
 
-	session, err := u.core.Refresh(sessionID)
+	session, err := refresh(sessionID)
 	if err != nil {
 		if errors.Is(err, errs.ErrUserSessionNotFound) {
 			return handler.Status(fiber.StatusUnauthorized).
@@ -130,4 +139,24 @@ func (u *UserSession) Refresh(handler *fiber.Ctx) error {
 	errNext := handler.Next()
 
 	return errNext
+}
+
+// Refresh a user session
+//
+//	@Summary		Refresh session
+//	@Tags			session
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	sent	"user session refreshed successfully"
+//	@Failure		401	{object}	sent	"user session has expired"
+//	@Failure		500	{object}	sent	"internal server error"
+//	@Router			/session [put]
+//	@Description	Refresh a user session and set in the response header.
+//	@Security		BasicAuth
+func (u *UserSession) Refresh(handler *fiber.Ctx) error {
+	return u.refresh(handler, u.core.Refresh)
+}
+
+func (u *UserSession) RefreshDev(handler *fiber.Ctx) error {
+	return u.refresh(handler, u.core.GetByID)
 }

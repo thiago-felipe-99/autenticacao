@@ -1,11 +1,21 @@
 {
     "swagger": "2.0",
     "info": {
-        "contact": {}
+        "description": "This is an api that make authorization",
+        "title": "Authorization",
+        "contact": {},
+        "version": "1.0"
     },
+    "host": "localhost:8080",
+    "basePath": "/",
     "paths": {
         "/role": {
             "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "description": "Get all roles",
                 "consumes": [
                     "application/json"
@@ -56,6 +66,11 @@
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "description": "Create a role.",
                 "consumes": [
                     "application/json"
@@ -120,6 +135,11 @@
         },
         "/role/{name}": {
             "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "description": "Get role by name.",
                 "consumes": [
                     "application/json"
@@ -168,6 +188,11 @@
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "description": "Delete a role.",
                 "consumes": [
                     "application/json"
@@ -224,6 +249,11 @@
         },
         "/session": {
             "put": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "description": "Refresh a user session and set in the response header.",
                 "consumes": [
                     "application/json"
@@ -309,6 +339,11 @@
         },
         "/user": {
             "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "description": "Get all user",
                 "consumes": [
                     "application/json"
@@ -359,6 +394,11 @@
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "description": "Create a user.",
                 "consumes": [
                     "application/json"
@@ -423,6 +463,11 @@
         },
         "/user/roles": {
             "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "description": "Get users by roles.",
                 "consumes": [
                     "application/json"
@@ -498,6 +543,11 @@
         },
         "/user/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "description": "Get user by id.",
                 "consumes": [
                     "application/json"
@@ -546,6 +596,11 @@
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "description": "Update a user informations.",
                 "consumes": [
                     "application/json"
@@ -621,6 +676,11 @@
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
                 "description": "Delete a user.",
                 "consumes": [
                     "application/json"
@@ -837,6 +897,13 @@
                     "type": "string"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "BasicAuth": {
+            "type": "apiKey",
+            "name": "Session",
+            "in": "header"
         }
     }
 }

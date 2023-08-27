@@ -175,7 +175,11 @@ func registerDefaultMiddlewares(app *fiber.App) {
 	app.Get("/swagger/*", swagger.New(swaggerConfig))
 }
 
-func CreateHTTPServer(validate *validator.Validate, cores *core.Cores) (*fiber.App, error) {
+func CreateHTTPServer(
+	validate *validator.Validate,
+	cores *core.Cores,
+	devMode bool,
+) (*fiber.App, error) {
 	app := fiber.New()
 
 	registerDefaultMiddlewares(app)
@@ -207,7 +211,16 @@ func CreateHTTPServer(validate *validator.Validate, cores *core.Cores) (*fiber.A
 
 	app.Post("/session", session.Create)
 
-	app.Use(session.Refresh)
+	if devMode {
+		app.Use(session.RefreshDev)
+	} else {
+		app.Use(session.Refresh)
+	}
+
+	app.Put(
+		"/session",
+		func(c *fiber.Ctx) error { return c.JSON(sent{"user session refresehed"}) },
+	)
 
 	app.Get("/role", role.GetAll)
 	app.Post("/role", role.Create)

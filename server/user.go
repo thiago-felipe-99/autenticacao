@@ -40,6 +40,7 @@ func (u *User) getTranslator(handler *fiber.Ctx) ut.Translator { //nolint:iretur
 //	@Param			id	path		string		true	"user id"
 //	@Router			/user/{id} [get]
 //	@Description	Get user by id.
+//	@Security		BasicAuth
 func (u *User) GetByID(handler *fiber.Ctx) error {
 	id, err := model.ParseID(handler.Params("id", "invalid-id"))
 	if err != nil {
@@ -79,6 +80,7 @@ func (u *User) GetByID(handler *fiber.Ctx) error {
 //	@Param			qt		query		string		false	"quantity user per page"
 //	@Router			/user/roles [get]
 //	@Description	Get users by roles.
+//	@Security		BasicAuth
 func (u *User) GetByRole(handler *fiber.Ctx) error {
 	query := &struct {
 		Roles []string
@@ -120,6 +122,7 @@ func (u *User) GetByRole(handler *fiber.Ctx) error {
 //	@Param			qt		query		string		false	"quantity user per page"
 //	@Router			/user [get]
 //	@Description	Get all user
+//	@Security		BasicAuth
 func (u *User) GetAll(handler *fiber.Ctx) error {
 	page, qt := handler.QueryInt("page"), handler.QueryInt("qt", defaultQtResults)
 
@@ -154,6 +157,7 @@ func (u *User) GetAll(handler *fiber.Ctx) error {
 //	@Param			user	body		model.UserPartial	true	"user params"
 //	@Router			/user [post]
 //	@Description	Create a user.
+//	@Security		BasicAuth
 func (u *User) Create(handler *fiber.Ctx) error {
 	userID, ok := handler.Locals("userID").(model.ID)
 	if !ok {
@@ -218,6 +222,7 @@ func (u *User) Create(handler *fiber.Ctx) error {
 //	@Param			id		path		string				true	"user id"
 //	@Router			/user/{id} [put]
 //	@Description	Update a user informations.
+//	@Security		BasicAuth
 func (u *User) Update(handler *fiber.Ctx) error {
 	id, err := model.ParseID(handler.Params("id", "invalid-id"))
 	if err != nil {
@@ -269,6 +274,7 @@ func (u *User) Update(handler *fiber.Ctx) error {
 //	@Param			id	path		string	true	"user id"
 //	@Router			/user/{id} [delete]
 //	@Description	Delete a user.
+//	@Security		BasicAuth
 func (u *User) Delete(handler *fiber.Ctx) error {
 	userID, ok := handler.Locals("userID").(model.ID)
 	if !ok {

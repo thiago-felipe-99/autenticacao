@@ -46,6 +46,7 @@ type configurations struct {
 	Role     roleAdmin      `config:"role"     validate:"required"`
 	Postgres postgresConfig `config:"postgres" validate:"required"`
 	Redis    redisConfig    `config:"redis"    validate:"required"`
+	DevMode  bool           `config:"dev"      validate:""`
 }
 
 //nolint:gomnd
@@ -74,6 +75,7 @@ func defaultConfigurations() configurations {
 			Password: "redis",
 			DB:       0,
 		},
+		DevMode: true,
 	}
 }
 

@@ -28,6 +28,7 @@ type User interface {
 }
 
 type UserSession interface {
+	GetByID(id model.ID) (model.UserSession, error)
 	GetAllActive(paginate int, qt int) ([]model.UserSession, error)
 	GetByUserIDActive(id model.ID, paginate int, qt int) ([]model.UserSession, error)
 	GetAllInactive(paginate int, qt int) ([]model.UserSession, error)

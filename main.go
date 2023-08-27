@@ -71,10 +71,9 @@ func noError(err error, msg string) {
 //	@host						localhost:8080
 //	@BasePath					/
 //	@description				This is an api that make authorization
-//	@securityDefinitions.apikey	ApiKeyAuth
+//	@securityDefinitions.apikey	BasicAuth
 //	@in							header
-//	@name						name
-//	@securityDefinitions.basic	ApiKeyAuth
+//	@name						Session
 func main() {
 	validate := validator.New()
 
@@ -117,7 +116,12 @@ func main() {
 		DB:       configurations.Redis.DB,
 	})
 
-	data, err := data.NewDataSQLRedis(db, redisClient, time.Hour, 2000, 1000) //nolint:gomnd
+	expires := time.Minute * 15 //nolint:gomnd
+	if configurations.DevMode {
+		expires = time.Hour
+	}
+
+	data, err := data.NewDataSQLRedis(db, redisClient, expires, 2000, 1000) //nolint:gomnd
 	noError(err, "Error starting data")
 
 	cores := core.NewCore(data, validate, true, time.Hour)
@@ -125,7 +129,7 @@ func main() {
 	err = createFirst(configurations, cores)
 	noError(err, "Erro creating initial resources")
 
-	server, err := server.CreateHTTPServer(validate, cores)
+	server, err := server.CreateHTTPServer(validate, cores, configurations.DevMode)
 	noError(err, "Error creating server")
 
 	err = server.Listen(":8080")

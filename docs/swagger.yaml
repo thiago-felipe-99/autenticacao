@@ -1,3 +1,4 @@
+basePath: /
 definitions:
   model.Role:
     properties:
@@ -108,8 +109,12 @@ definitions:
       message:
         type: string
     type: object
+host: localhost:8080
 info:
   contact: {}
+  description: This is an api that make authorization
+  title: Authorization
+  version: "1.0"
 paths:
   /role:
     get:
@@ -142,6 +147,8 @@ paths:
           description: internal server error
           schema:
             $ref: '#/definitions/server.sent'
+      security:
+      - BasicAuth: []
       summary: Get roles
       tags:
       - role
@@ -183,6 +190,8 @@ paths:
           description: internal server error
           schema:
             $ref: '#/definitions/server.sent'
+      security:
+      - BasicAuth: []
       summary: Create role
       tags:
       - role
@@ -220,6 +229,8 @@ paths:
           description: internal server error
           schema:
             $ref: '#/definitions/server.sent'
+      security:
+      - BasicAuth: []
       summary: Delete role
       tags:
       - role
@@ -252,6 +263,8 @@ paths:
           description: internal server error
           schema:
             $ref: '#/definitions/server.sent'
+      security:
+      - BasicAuth: []
       summary: Get role
       tags:
       - role
@@ -308,6 +321,8 @@ paths:
           description: internal server error
           schema:
             $ref: '#/definitions/server.sent'
+      security:
+      - BasicAuth: []
       summary: Refresh session
       tags:
       - session
@@ -342,6 +357,8 @@ paths:
           description: internal server error
           schema:
             $ref: '#/definitions/server.sent'
+      security:
+      - BasicAuth: []
       summary: Get users
       tags:
       - user
@@ -383,6 +400,8 @@ paths:
           description: internal server error
           schema:
             $ref: '#/definitions/server.sent'
+      security:
+      - BasicAuth: []
       summary: Create user
       tags:
       - user
@@ -420,6 +439,8 @@ paths:
           description: internal server error
           schema:
             $ref: '#/definitions/server.sent'
+      security:
+      - BasicAuth: []
       summary: Delete user
       tags:
       - user
@@ -452,6 +473,8 @@ paths:
           description: internal server error
           schema:
             $ref: '#/definitions/server.sent'
+      security:
+      - BasicAuth: []
       summary: Get user by id
       tags:
       - user
@@ -502,6 +525,8 @@ paths:
           description: internal server error
           schema:
             $ref: '#/definitions/server.sent'
+      security:
+      - BasicAuth: []
       summary: Update user
       tags:
       - user
@@ -552,7 +577,14 @@ paths:
           description: internal server error
           schema:
             $ref: '#/definitions/server.sent'
+      security:
+      - BasicAuth: []
       summary: Get users by roles
       tags:
       - user
+securityDefinitions:
+  BasicAuth:
+    in: header
+    name: Session
+    type: apiKey
 swagger: "2.0"

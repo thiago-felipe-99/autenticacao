@@ -21,7 +21,10 @@ type UserSession struct {
 func (u *UserSession) GetAllActive(paginate int, qt int) ([]model.UserSession, error) {
 	userSessions, err := u.database.GetAllActive(paginate, qt)
 	if err != nil {
-		return model.EmptyUserSessions, fmt.Errorf("error getting users sessions from database: %w", err)
+		return model.EmptyUserSessions, fmt.Errorf(
+			"error getting users sessions from database: %w",
+			err,
+		)
 	}
 
 	return userSessions, nil
@@ -34,7 +37,10 @@ func (u *UserSession) GetByUserIDActive(
 ) ([]model.UserSession, error) {
 	userSessions, err := u.database.GetByUserIDActive(userID, paginate, qt)
 	if err != nil {
-		return model.EmptyUserSessions, fmt.Errorf("error getting users sessions from database: %w", err)
+		return model.EmptyUserSessions, fmt.Errorf(
+			"error getting users sessions from database: %w",
+			err,
+		)
 	}
 
 	return userSessions, nil
@@ -43,7 +49,10 @@ func (u *UserSession) GetByUserIDActive(
 func (u *UserSession) GetAllInactive(paginate int, qt int) ([]model.UserSession, error) {
 	userSessions, err := u.database.GetAllInactive(paginate, qt)
 	if err != nil {
-		return model.EmptyUserSessions, fmt.Errorf("error getting users sessions from database: %w", err)
+		return model.EmptyUserSessions, fmt.Errorf(
+			"error getting users sessions from database: %w",
+			err,
+		)
 	}
 
 	return userSessions, nil
@@ -56,10 +65,29 @@ func (u *UserSession) GetByUserIDInactive(
 ) ([]model.UserSession, error) {
 	userSessions, err := u.database.GetByUserIDInactive(userID, paginate, qt)
 	if err != nil {
-		return model.EmptyUserSessions, fmt.Errorf("error getting users sessions from database: %w", err)
+		return model.EmptyUserSessions, fmt.Errorf(
+			"error getting users sessions from database: %w",
+			err,
+		)
 	}
 
 	return userSessions, nil
+}
+
+func (u *UserSession) GetByID(id model.ID) (model.UserSession, error) {
+	userSession, err := u.database.GetByID(id)
+	if err != nil {
+		if errors.Is(err, errs.ErrUserSessionNotFound) {
+			return model.EmptyUserSession, errs.ErrUserSessionNotFound
+		}
+
+		return model.EmptyUserSession, fmt.Errorf(
+			"error getting user session from database: %w",
+			err,
+		)
+	}
+
+	return userSession, nil
 }
 
 func (u *UserSession) Create(partial model.UserSessionPartial) (model.UserSession, error) {
@@ -99,7 +127,10 @@ func (u *UserSession) Create(partial model.UserSessionPartial) (model.UserSessio
 
 	err = u.database.Create(userSession)
 	if err != nil {
-		return model.EmptyUserSession, fmt.Errorf("error creating user session on database: %w", err)
+		return model.EmptyUserSession, fmt.Errorf(
+			"error creating user session on database: %w",
+			err,
+		)
 	}
 
 	return userSession, nil

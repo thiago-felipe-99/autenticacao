@@ -40,6 +40,7 @@ func (r *Role) getTranslator(handler *fiber.Ctx) ut.Translator { //nolint:iretur
 //	@Param			name	path		string		true	"role name"
 //	@Router			/role/{name} [get]
 //	@Description	Get role by name.
+//	@Security		BasicAuth
 func (r *Role) GetByName(handler *fiber.Ctx) error {
 	funcCore := func() (model.Role, error) { return r.core.GetByName(handler.Params("name")) }
 
@@ -70,6 +71,7 @@ func (r *Role) GetByName(handler *fiber.Ctx) error {
 //	@Param			qt		query		string		false	"quantity roles per page"
 //	@Router			/role [get]
 //	@Description	Get all roles
+//	@Security		BasicAuth
 func (r *Role) GetAll(handler *fiber.Ctx) error {
 	page, qt := handler.QueryInt("page"), handler.QueryInt("qt", defaultQtResults)
 
@@ -104,6 +106,7 @@ func (r *Role) GetAll(handler *fiber.Ctx) error {
 //	@Param			role	body		model.RolePartial	true	"role params"
 //	@Router			/role [post]
 //	@Description	Create a role.
+//	@Security		BasicAuth
 func (r *Role) Create(handler *fiber.Ctx) error {
 	userID, ok := handler.Locals("userID").(model.ID)
 	if !ok {
@@ -152,6 +155,7 @@ func (r *Role) Create(handler *fiber.Ctx) error {
 //	@Param			name	path		string	true	"role name"
 //	@Router			/role/{name} [delete]
 //	@Description	Delete a role.
+//	@Security		BasicAuth
 func (r *Role) Delete(handler *fiber.Ctx) error {
 	userID, ok := handler.Locals("userID").(model.ID)
 	if !ok {

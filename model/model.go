@@ -3,8 +3,10 @@ package model
 import (
 	"database/sql/driver"
 	"fmt"
+	"regexp"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 )
@@ -62,9 +64,16 @@ var (
 	EmptyRoles = []Role{} //nolint:gochecknoglobals
 )
 
+func CustomValidationUsername(field validator.FieldLevel) bool {
+	value := field.Field().String()
+	regex := regexp.MustCompile(`^(\w|\d|\.|_)+$`)
+
+	return regex.MatchString(value)
+}
+
 type UserPartial struct {
 	Name     string   `config:"name"     json:"name"     validate:"required,max=255"`
-	Username string   `config:"username" json:"username" validate:"required,alphanumunicode,max=255"`
+	Username string   `config:"username" json:"username" validate:"required,username,max=255"`
 	Email    string   `config:"email"    json:"email"    validate:"required,email,max=255"`
 	Password string   `config:"password" json:"password" validate:"required,max=255"`
 	Roles    []string `                  json:"roles"    validate:"omitempty"`
@@ -72,7 +81,7 @@ type UserPartial struct {
 
 type UserUpdate struct {
 	Name     string   `json:"name"     validate:"omitempty,max=255"`
-	Username string   `json:"username" validate:"omitempty,alphanumunicode,max=255"`
+	Username string   `json:"username" validate:"omitempty,username,max=255"`
 	Email    string   `json:"email"    validate:"omitempty,email,max=255"`
 	Password string   `json:"password" validate:"omitempty,max=255"`
 	Roles    []string `json:"roles"    validate:"omitempty"`

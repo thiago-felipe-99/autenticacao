@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/alexedwards/argon2id"
@@ -11,7 +12,6 @@ import (
 	"github.com/thiago-felipe-99/autenticacao/data"
 	"github.com/thiago-felipe-99/autenticacao/errs"
 	"github.com/thiago-felipe-99/autenticacao/model"
-	"golang.org/x/exp/slices"
 )
 
 type User struct {

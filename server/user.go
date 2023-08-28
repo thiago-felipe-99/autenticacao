@@ -82,7 +82,7 @@ func (u *User) GetByID(handler *fiber.Ctx) error {
 //	@Description	Get users by roles.
 //	@Security		BasicAuth
 func (u *User) GetByRole(handler *fiber.Ctx) error {
-	query := &struct {
+	query := &struct { //nolint:exhaustruct
 		Roles []string
 		Page  int
 		Qt    int

@@ -2,6 +2,7 @@ package core_test
 
 import (
 	"fmt"
+	"slices"
 	"testing"
 	"time"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/thiago-felipe-99/autenticacao/data"
 	"github.com/thiago-felipe-99/autenticacao/errs"
 	"github.com/thiago-felipe-99/autenticacao/model"
-	"golang.org/x/exp/slices"
 )
 
 func createTempRole(t *testing.T, role *core.Role, db *sqlx.DB) (model.ID, model.RolePartial) {

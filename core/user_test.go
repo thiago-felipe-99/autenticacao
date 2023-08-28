@@ -1,6 +1,7 @@
 package core_test
 
 import (
+	"slices"
 	"testing"
 	"time"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/thiago-felipe-99/autenticacao/data"
 	"github.com/thiago-felipe-99/autenticacao/errs"
 	"github.com/thiago-felipe-99/autenticacao/model"
-	"golang.org/x/exp/slices"
 )
 
 var invalidUserPartialInputs = []struct { //nolint:gochecknoglobals

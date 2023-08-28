@@ -208,6 +208,8 @@ func (u *UserSessionRedis) consumeChan(
 			u.errs <- errors.Join(ErrInsertingUserSessionDB, err)
 		}
 
+		// does not use nil because the underlying memory will be marked for removal by the GC,
+		// with this method the memory is not marked and the capacity is kept
 		usersSessions = usersSessions[:0]
 	}
 
@@ -257,6 +259,8 @@ func (u *UserSessionRedis) expiredUserSessions(clock time.Duration, max int) {
 				u.errs <- errors.Join(ErrInsertingUserSessionDB, err)
 			}
 
+			// does not use nil because the underlying memory will be marked for removal by the GC,
+			// with this method the memory is not marked and the capacity is kept
 			usersSessions = usersSessions[:0]
 
 			err := u.database.Select(&usersSessions, getInactives)

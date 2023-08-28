@@ -1,6 +1,6 @@
 module github.com/thiago-felipe-99/autenticacao
 
-go 1.20
+go 1.21
 
 require (
 	github.com/alexedwards/argon2id v0.0.0-20230305115115-4b3c3280a736
@@ -24,7 +24,6 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/swaggo/swag v1.16.1
 	github.com/vmihailenco/msgpack/v5 v5.3.5
-	golang.org/x/exp v0.0.0-20230713183714-613f0c0eb8a1
 )
 
 require (

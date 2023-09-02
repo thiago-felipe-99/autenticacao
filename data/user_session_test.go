@@ -71,11 +71,24 @@ func TestUserSession(t *testing.T) { //nolint:funlen
 	require.NoError(t, err)
 	require.Equal(t, model.EmptyUserSessions, usersSessionsIDInactive)
 
+	userSessionTemp, err := userSession.GetByID(userTemp.ID)
+	require.ErrorIs(t, err, errs.ErrUserSessionNotFound)
+	require.Equal(t, model.EmptyUserSession, userSessionTemp)
+
 	for i := 0; i < qtUsersSessions; i++ {
 		userSessionTemp := createUserSession(userTemp.ID)
 		usersSessionsID = append(usersSessionsID, userSessionTemp.ID)
 		err := userSession.Create(userSessionTemp)
 		require.NoError(t, err)
+
+		userSessionTemp2, err := userSession.GetByID(userSessionTemp.ID)
+		require.NoError(t, err)
+
+		require.Equal(t, userSessionTemp.ID, userSessionTemp2.ID)
+		require.Equal(t, userSessionTemp.UserID, userSessionTemp2.UserID)
+		require.True(t, userSessionTemp2.CreateaAt.Equal(userSessionTemp.CreateaAt))
+		require.True(t, userSessionTemp2.DeletedAt.Equal(userSessionTemp.DeletedAt))
+		require.True(t, userSessionTemp2.Expires.Equal(userSessionTemp.Expires))
 	}
 
 	time.Sleep(time.Second)
@@ -177,7 +190,7 @@ func TestUserSessionExpire(t *testing.T) { //nolint:funlen
 		DB:       0,
 	})
 	buffer := 250
-	overflowBuffer := buffer * 10
+	overflowBuffer := buffer*10 + buffer/2
 	qtUsersSessions := overflowBuffer
 	usersSessionsID := make([]model.ID, 0, qtUsersSessions)
 
@@ -303,7 +316,11 @@ func TestUserSessionWrongDB(t *testing.T) {
 		err = userSession.Create(createUserSession(userTemp.ID))
 		require.ErrorContains(t, err, "no such host")
 
-		userSessionTemp, err := userSession.Delete(model.NewID(), time.Now())
+		userSessionTemp, err := userSession.GetByID(model.NewID())
+		require.ErrorContains(t, err, "no such host")
+		require.Equal(t, model.EmptyUserSession, userSessionTemp)
+
+		userSessionTemp, err = userSession.Delete(model.NewID(), time.Now())
 		require.ErrorContains(t, err, "no such host")
 		require.Equal(t, model.EmptyUserSession, userSessionTemp)
 	})
@@ -324,6 +341,10 @@ func TestUserSessionWrongDB(t *testing.T) {
 
 		err = <-userSession.Errors()
 		require.ErrorContains(t, err, "no such host")
+
+		userSession.LogErrors()
+		err = userSession.Create(userSessionTemp1)
+		require.NoError(t, err)
 
 		userSessions, err := userSession.GetAllActive(0, buffer)
 		require.ErrorContains(t, err, "no such host")

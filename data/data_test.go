@@ -3,6 +3,7 @@ package data_test
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/golang-migrate/migrate/v4"
@@ -10,7 +11,9 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
+	"github.com/thiago-felipe-99/autenticacao/data"
 )
 
 func createTempDB(t *testing.T, name string) *sqlx.DB {
@@ -69,4 +72,21 @@ func createWrongDB(t *testing.T) *sqlx.DB {
 	require.NoError(t, err)
 
 	return db
+}
+
+func TestNewDataSQLRedis(t *testing.T) {
+	t.Parallel()
+
+	redisClient := redis.NewClient(&redis.Options{ //nolint:exhaustruct
+		Addr:     "localhost:6379",
+		Password: "redis",
+		DB:       0,
+	})
+
+	Data, err := data.NewDataSQLRedis(createTempDB(t, "data"), redisClient, time.Second, 200, 100)
+	require.NoError(t, err)
+	require.NotNil(t, Data)
+	require.IsType(t, &data.RoleSQL{}, Data.Role)
+	require.IsType(t, &data.UserSQL{}, Data.User)
+	require.IsType(t, &data.UserSessionRedis{}, Data.UserSession)
 }

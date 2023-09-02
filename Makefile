@@ -43,7 +43,7 @@ test: docker_up verify_postgresql lint
 	go test ./...
 
 .PHONY: coverage
-coverage: docker_up verify_postgresql migrate_up lint
+coverage: docker_up verify_postgresql lint
 	go test -coverprofile coverage.out ./...
 	go tool cover -html=coverage.out
 

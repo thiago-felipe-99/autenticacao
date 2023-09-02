@@ -66,7 +66,7 @@ var (
 
 func CustomValidationUsername(field validator.FieldLevel) bool {
 	value := field.Field().String()
-	regex := regexp.MustCompile(`^(\w|\d|\.|_)+$`)
+	regex := regexp.MustCompile(`^(\p{L}|\d|\.|_)+$`)
 
 	return regex.MatchString(value)
 }

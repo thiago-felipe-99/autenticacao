@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/go-playground/locales/en"
@@ -13,8 +14,10 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
 	"github.com/thiago-felipe-99/autenticacao/core"
+	"github.com/thiago-felipe-99/autenticacao/data"
 	"github.com/thiago-felipe-99/autenticacao/errs"
 	"github.com/thiago-felipe-99/autenticacao/model"
 )
@@ -114,4 +117,23 @@ func TestValidate(t *testing.T) {
 
 	err = core.Validate(validate, nil)
 	require.ErrorIs(t, err, errs.ErrBodyValidate)
+}
+
+func TestNewCore(t *testing.T) {
+	t.Parallel()
+
+	redisClient := redis.NewClient(&redis.Options{ //nolint:exhaustruct
+		Addr:     "localhost:6379",
+		Password: "redis",
+		DB:       0,
+	})
+
+	Data, err := data.NewDataSQLRedis(createTempDB(t, "data"), redisClient, time.Second, 200, 100)
+	require.NoError(t, err)
+
+	Core := core.NewCore(Data, model.Validate(), false, time.Second)
+	require.NotNil(t, Core)
+	require.NotNil(t, Core.Role)
+	require.NotNil(t, Core.User)
+	require.NotNil(t, Core.UserSession)
 }

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/brianvoe/gofakeit/v6"
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/thiago-felipe-99/autenticacao/model"
@@ -98,4 +99,25 @@ func TestUser(t *testing.T) {
 
 	require.Equal(t, user.Postgres(), postgres)
 	require.Equal(t, postgres.User(), user)
+}
+
+func TestValidate(t *testing.T) {
+	t.Parallel()
+
+	validate := model.Validate()
+
+	require.NotNil(t, validate)
+
+	type username struct {
+		Username string `validate:"username"`
+	}
+
+	valid := username{"45.__TTTéOteste_teste.45"}
+	invalid := username{"45.__TTTéOteste_teste.45   teste"}
+
+	err := validate.Struct(valid)
+	require.NoError(t, err)
+
+	err = validate.Struct(invalid)
+	require.ErrorAs(t, err, &validator.ValidationErrors{})
 }

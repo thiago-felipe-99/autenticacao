@@ -112,6 +112,14 @@ func TestUserSessionCreate(t *testing.T) { //nolint:funlen
 					require.Equal(t, userID, userSessionTemp.UserID)
 					require.LessOrEqual(t, time.Since(userSessionTemp.CreateaAt), time.Second)
 					require.Equal(t, time.Time{}, userSessionTemp.DeletedAt)
+
+					userSessionDB, err := userSession.GetByID(userSessionTemp.ID)
+					require.NoError(t, err)
+
+					require.Equal(t, userSessionDB.ID, userSessionTemp.ID)
+					require.Equal(t, userSessionDB.UserID, userSessionTemp.UserID)
+					require.True(t, userSessionDB.CreateaAt.Equal(userSessionTemp.CreateaAt))
+					require.True(t, userSessionDB.DeletedAt.Equal(userSessionTemp.DeletedAt))
 				})
 			}
 		})
@@ -227,6 +235,14 @@ func TestUserSessionCreate(t *testing.T) { //nolint:funlen
 			}
 		})
 	}
+
+	t.Run("UserSeesionNotExist", func(t *testing.T) {
+		t.Parallel()
+
+		userSession, err := userSession.GetByID(model.NewID())
+		require.ErrorIs(t, err, errs.ErrUserSessionNotFound)
+		require.Equal(t, userSession, model.EmptyUserSession)
+	})
 }
 
 func TestUserSessionRefresh(t *testing.T) {
@@ -505,10 +521,10 @@ func TestUserSessionGetAll(t *testing.T) { //nolint:funlen
 	}
 }
 
-func TestUserSessionGetByID(t *testing.T) { //nolint:funlen
+func TestUserSessionGetByUserID(t *testing.T) { //nolint:funlen
 	t.Parallel()
 
-	db := createTempDB(t, "user_session_get_all")
+	db := createTempDB(t, "user_session_get_by_user_id")
 	redisClient := redis.NewClient(&redis.Options{ //nolint:exhaustruct
 		Addr:     "localhost:6379",
 		Password: "redis",
@@ -619,32 +635,36 @@ func TestUserSessionGetByID(t *testing.T) { //nolint:funlen
 	}
 }
 
-func checkUserSessionWrongDB(t *testing.T, userSession *core.UserSession, qtRoles int) {
+func checkUserSessionWrongDB(t *testing.T, userSession *core.UserSession, qtUserSessions int) {
 	t.Helper()
 
-	roles, err := userSession.GetAllActive(0, qtRoles)
+	userSessions, err := userSession.GetAllActive(0, qtUserSessions)
 	require.ErrorContains(t, err, "no such host")
-	assert.Equal(t, model.EmptyUserSessions, roles)
+	assert.Equal(t, model.EmptyUserSessions, userSessions)
 
-	roles, err = userSession.GetAllInactive(0, qtRoles)
+	userSessions, err = userSession.GetAllInactive(0, qtUserSessions)
 	require.ErrorContains(t, err, "no such host")
-	assert.Equal(t, model.EmptyUserSessions, roles)
+	assert.Equal(t, model.EmptyUserSessions, userSessions)
 
-	roles, err = userSession.GetByUserIDActive(model.NewID(), 0, qtRoles)
+	userSessions, err = userSession.GetByUserIDActive(model.NewID(), 0, qtUserSessions)
 	require.ErrorContains(t, err, "no such host")
-	assert.Equal(t, model.EmptyUserSessions, roles)
+	assert.Equal(t, model.EmptyUserSessions, userSessions)
 
-	roles, err = userSession.GetByUserIDInactive(model.NewID(), 0, qtRoles)
+	userSessions, err = userSession.GetByUserIDInactive(model.NewID(), 0, qtUserSessions)
 	require.ErrorContains(t, err, "no such host")
-	assert.Equal(t, model.EmptyUserSessions, roles)
+	assert.Equal(t, model.EmptyUserSessions, userSessions)
 
-	role, err := userSession.Delete(model.NewID())
+	userSessionDB, err := userSession.GetByID(model.NewID())
 	require.ErrorContains(t, err, "no such host")
-	assert.Equal(t, model.EmptyUserSession, role)
+	assert.Equal(t, model.EmptyUserSession, userSessionDB)
 
-	role, err = userSession.Refresh(model.NewID())
+	userSessionDB, err = userSession.Delete(model.NewID())
 	require.ErrorContains(t, err, "no such host")
-	assert.Equal(t, model.EmptyUserSession, role)
+	assert.Equal(t, model.EmptyUserSession, userSessionDB)
+
+	userSessionDB, err = userSession.Refresh(model.NewID())
+	require.ErrorContains(t, err, "no such host")
+	assert.Equal(t, model.EmptyUserSession, userSessionDB)
 }
 
 func TestUserSessionWrongDB(t *testing.T) {
